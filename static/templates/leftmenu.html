@@ -1,0 +1,17 @@
+<h4>Mercs</h4>
+<ul>
+	<li><b>User</b></li>
+	<li><a href="{% url 'character' %}">Character</a></li>
+	
+	<li>Actions</li>
+	<li><a href="{% url 'short job' %}">Short Job</a></li>
+	
+	
+	
+			
+	{% if user.is_authenticated %}
+	<br>
+	<br>
+	<li><a href="{% url 'logout' %}">Logout</a></li>
+	{% endif %}
+</ul>

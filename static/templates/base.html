@@ -1,0 +1,46 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="{% static 'assets/css/default.css' %}">
+	
+	<script type="text/javascript" src="{% static 'assets/js/jquery.js' %}"></script>
+	
+
+	{% block js %}{% endblock %}
+	
+	<title>Mercs - {% block pagename %}{% endblock %}</title>
+</head>
+
+<body>
+	<div id="container">
+	
+		<div id="header">
+			<h1><span class="blue-text"><a href="{% url 'index' %}">Mercenaries</a></span>{% block header_1b %}{% endblock %}</h1>
+		</div>
+        
+<!--
+		<div id="menu">
+			{% block menu %}{% endblock %}
+			<ul>
+				<li class="menuitem"><a href="index.html">some test</a></li>
+				<li class="menuitem"><a href="contact.html">Contact Us</a></li>
+			</ul>
+		</div>
+-->
+	
+		<div id="leftmenu">
+		{% block leftmenu %}
+		{% include "leftmenu.html" %}
+		{% endblock %}
+		</div>
+
+		<div id="content">
+			{% block content %}{% endblock %}
+		</div>
+	
+
+	</div><!--container end-->
+</body>
+</html>
+
