@@ -15,23 +15,41 @@ from elements.models import ShortJob
 
 @login_required
 def short_job(request):
+	character = request.user.character
+	session = request.session
+	timercheck = character.charactertimers.check_timer('short_job')
 	
-	if "short_job_list" not in request.session:
-		request.session['short_job_list'] = ShortJob.get_job_list(request.user.character)
 	
+	#check if player is ready for job
+	if timercheck.check:
+		session['short_job_part'] = "form"
+		if "short_job_list" not in request.session:
+			session['short_job_list'] = ShortJob.get_job_list(character)
+			
+	else:
+		session['short_job_timer'] = timercheck.timer
+		session['short_job_part'] = "timer"
+	
+	#if action is taken
 	if request.POST:
+		session['short_job_part'] = "result"
+		
 		#update timer and xp
-		request.user.character.perform_action("short_job")
+		character.perform_action("short_job")
 		
 		# check if succeeds and give consequences
 		job = request.POST["short_job"]
-		chance = request.session['short_job_list'][request.POST["short_job"]]
-		request.user.character.check_to_succeed(job, chance)
+		chance = session['short_job_list'][job]
+		result = ShortJob.check_to_succeed(job, chance, character)
 		
-		#remove short_job_list
-		del request.session['short_job_list']
 		
-				
-		return HttpResponseRedirect(reverse('short job'))
-	
+		#remove short_job_list and timer
+		del session['short_job_list']
+		
+		return render(request, "shortjob.html", {"result": result})
+		
 	return render(request, "shortjob.html")
+
+
+
+

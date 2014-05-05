@@ -1,30 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import User
 from elements.models import Region, Rank, GameBaseValues, ShortJob
+from elements.models import get_min_max_result, convert_damn, convert_timedelta
 from django.utils.timezone import utc
 
 from datetime import datetime, timedelta
 from random import randint
 from collections import OrderedDict, namedtuple
-import locale
-
-
-# convert timedelta to readable time
-def convert_timedelta(duration):
-	days, seconds = duration.days, duration.seconds
-	hours = days * 24 + seconds // 3600
-	minutes = (seconds % 3600) // 60
-	seconds = (seconds % 60)
-	
-	string = ""
-	if hours > 0:
-		string += "{}H ".format(hours)
-	if minutes > 0:
-		string += "{}M ".format(minutes)
-	if seconds > 0:
-		string += "{}S ".format(seconds)
-	
-	return string
 
 
 
@@ -55,7 +37,7 @@ class Character(models.Model):
 	
 	
 	hitpoints = models.IntegerField()
-	accuracy = models.FloatField(default=0)
+	accuracy = models.IntegerField(default=0)
 	xp = models.IntegerField(default=0)
 	booze_tries = models.IntegerField(default=0)
 	drugs_tries = models.IntegerField(default=0)
@@ -80,7 +62,6 @@ class Character(models.Model):
 			character = new_character,
 		)
 		timers.save()
-		
 	
 	
 	# return players basic information
@@ -99,9 +80,8 @@ class Character(models.Model):
 	def possessions(self):	
 		possessions = OrderedDict()
 		#set currency
-		locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-		damn = locale.currency(self.damn, grouping=True).replace('$','') + " Dmn"
-		possessions['damn'] = damn
+		
+		possessions['damn'] = convert_damn(self.damn)
 		possessions["plane"] = self.plane
 		possessions["gun"] = self.gun
 		possessions["bullets"] = self.bullets
@@ -112,8 +92,9 @@ class Character(models.Model):
 	#return player status bars
 	def status(self):
 		status = OrderedDict()
-		status["rank"] = self.rank_progress()
-		status["healt"] = self.health()
+		status["rank"] = self.view_rank_progress()
+		status["healt"] = self.view_health()
+		status['accuracy'] = self.view_accuracy()
 		
 		return status
 	
@@ -157,12 +138,13 @@ class Character(models.Model):
 			if rank.min_xp <= self.xp and rank.max_xp >= self.xp:
 				self.rank = rank
 				self.hitpoints = self.rank.hitpoints
+				self.save()
 				return
 		
 	
 	
 	#get rank progres
-	def rank_progress(self):
+	def view_rank_progress(self):
 		needed_xp = self.rank.max_xp - self.rank.min_xp + 1.0
 		got_xp = self.xp - self.rank.min_xp + 0.0
 		procent = got_xp / needed_xp * 100
@@ -170,48 +152,47 @@ class Character(models.Model):
 	
 	
 	# get % health
-	def health(self):
-		health = (self.hitpoints + 0.0) / (self.rank.hitpoints + 0.0) * 100
+	def view_health(self):
+		health = (self.hitpoints + 0.0) / (self.rank.hitpoints) * 100
+		if health > 100:
+			health = 100
 		return "%.2f %%" % health
+	
+	#get 1% of total health based on rank
+	def percent_health(self):
+		percent = int(self.rank.hitpoints / 100)
+		if percent < 1:
+			percent = 1
+		return percent
 		
-
+	# get max hitpoints	
+	def max_health(self):
+		return int(self.rank.hitpoints * 1.1)
+	
+		
+	# get players view of accuracy
+	def view_accuracy(self):
+		accuracy = (self.accuracy + 0.0) / 100
+		if accuracy > 100:
+			accuracy = 100.00
+		return "%.2f %%" % accuracy
+		
+		
+	
 			
 	#set new xp, and timer
 	def perform_action(self, field):
-		values = GameBaseValues.objects.get(id=1)
-		#set timer
-		now = datetime.utcnow().replace(tzinfo=utc)
-		setattr(self.charactertimers, field, now + timedelta(seconds=getattr(values, field)))
-		self.charactertimers.save()
-		
+		self.charactertimers.update_timer(field=field)
+				
 		#add xp
+		values = GameBaseValues.objects.get(id=1)
 		setattr(self, "xp", self.xp + getattr(values, field+"_xp"))
 		self.save()
-
-
-	# check if the (short) job succeeds and take consequences based on result
-	def check_to_succeed(self, name, chance):
-		job = ShortJob.objects.get(name=name)
-		roll = randint(0,100)
 		
-		if roll <= chance:
-			#get reward in damn
-			times_rank = (job.damn_max - job.damn_min + 0.0) / (Rank.objects.all().count() - 2 )
-			solid_chance = int(times_rank * self.rank.rank + job.damn_min)
-			random_chance = randint(job.damn_min - solid_chance, job.damn_max - solid_chance)
-			total = random_chance + solid_chance
-			print total
-			
-			#add to character
-			self.damn += total
-			self.save()
-			
-			
-		else:
-			print "fail"
-			
+		#check if you ranked up
+		self.check_rank()
 		
-	
+
 	
 	
 class CharacterTimers(models.Model):
@@ -223,9 +204,9 @@ class CharacterTimers(models.Model):
 	
 	#normal actions
 	travel = models.DateTimeField(default=now)					#timer depends on plane,  default = 2 hours(no plane)
-	blood = models.DateTimeField(default=now)				#1 hour timer
-	race = models.DateTimeField(default=now)				#30 minutes
-	kill = models.DateTimeField(default=now)			#1 hour timer
+	blood = models.DateTimeField(default=now)					#1 hour timer
+	race = models.DateTimeField(default=now)					#30 minutes
+	kill = models.DateTimeField(default=now)					#1 hour timer
 	bullet_deal = models.DateTimeField(default=now)				#1 hour timer
 	booze = models.DateTimeField(default=now)					#every 30 minutes available for xp
 	drugs = models.DateTimeField(default=now)					#every 30 minutes available for xp
@@ -240,6 +221,10 @@ class CharacterTimers(models.Model):
 	organised_crime = models.DateTimeField(default=now)			#6 hour timer	(rob a bank)
 	raid = models.DateTimeField(default=now)					#12 hour timer	(help army on mission)
 	mega_oc = models.DateTimeField(default=now)					#24 hour timer 	(rob a national bank or other big place)	
+	
+	#jail timers
+	location = models.NullBooleanField(default=True)			#True for active, False for in jail, None for in hospital
+	inactive = models.DateTimeField(default=now)				#time you are held up in hospital or jail
 	
 	def __unicode__(self):
 		return "%s's timers" % self.character.user.name
@@ -263,19 +248,6 @@ class CharacterTimers(models.Model):
 		fields["bullet deal"] = ""
 		
 		now = datetime.utcnow().replace(tzinfo=utc)
-		
-		#for field in fields:
-			#model_field = field.replace(" ", "_")
-			#field.replace("_", " ")
-			#timer = getattr(self, model_field)
-			
-			
-			#if now > timer:
-				#fields[field] = "Now"
-			#else:
-				#fields[field] = convert_timedelta(timer - now)
-		
-		#return fields
 
 		Link = namedtuple("Link", "url timer")
 		group_crimes = ("heist", "organised crime", "mega oc", "raid")
@@ -300,17 +272,60 @@ class CharacterTimers(models.Model):
 
 			
 	
-	#returns True if timer < now
+	# get timer by field
 	def check_timer(self, field):
 		timer = getattr(self, field)
 		now = datetime.utcnow().replace(tzinfo=utc)
 		
+		TimerCheck = namedtuple("TimerCheck", "check timer")
+		
+		#check if in jail/hospital
+		if self.inactive < now:
+			self.location=True
+			self.save()
+		elif self.location == False:
+			timer = "You are still locked up in jail for %s." % convert_timedelta(self.inactive - now)
+			return TimerCheck(check=False, timer=timer)
+		elif self.location == None:
+			timer = "You are getting patched up in hospital. Please wait another %s" % convert_timedelta(self.inactive - now)
+			return TimerCheck(check=False, timer=timer)
+			
 		if now > timer:
-			return True
+			return TimerCheck(check=True, timer="Now")
 		else:
-			return False, convert_timedelta(timer - now)
+			timer = "You are still tired from your last job. please wait another %s before trying again." % convert_timedelta(timer - now)
+			return TimerCheck(check=False, timer=timer)
+
+
+	def check_if_inactive(self):
+		now = datetime.utcnow().replace(tzinfo=utc)
+		
+		if self.inactive < now:
+			self.location=True
+			self.save()
 	
 	
+	#set a timer
+	def update_timer(self, field, **kwargs):
+		values = GameBaseValues.objects.get(id=1)
+		if 'timer' in kwargs:
+			timer = timedelta(seconds=kwargs['timer'])
+		else:
+			timer = timedelta(seconds=getattr(values, field))
+		
+		#set nullboolean to hospital or jail
+		if "inactive" in kwargs:
+			if kwargs['inactive'] == "jail":
+				self.location = False
+			elif kwargs['inactive'] == "hospital":
+				self.location = None
+			else:
+				print "no suitable result for inactive!!!"
+		
+		#set timer
+		now = datetime.utcnow().replace(tzinfo=utc)
+		setattr(self, field, now + timer)
+		self.save()
 		
 	
 
