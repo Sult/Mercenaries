@@ -7,10 +7,8 @@ from django.core.context_processors import csrf
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
 
-#convert model to dict for sessions
-from django.forms.models import model_to_dict
-
-from elements.models import ShortJob
+from characters.models import CharacterTransport
+from elements.models import ShortJob, Region
 
 
 @login_required
@@ -51,5 +49,10 @@ def short_job(request):
 	return render(request, "shortjob.html")
 
 
-
+#the market overview
+@login_required
+def market(request):
+	transports = CharacterTransport.transport_overview(request.user.character)
+	return render(request, "market.html", {"transports": transports})
+	
 

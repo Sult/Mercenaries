@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block pagename %}market of {{ request.user.character.region }}{% endblock %}
+
+
+{% block content %}
+<div style="text-align:center">
+	Welcome to the market - Here you can buy everything you need to be a real mercenary.<br>
+	Be warned: "All your items, except for your houses, sell for only 50% of the original price.<br>
+	You are currently viewing the market in {{ request.user.character.region }}, and are waiting on the following deliveries:<br>
+	<br>
+	Make a waitlist of "incoming" items	
+	
+	<table align="center">
+		<tr>
+			<td colspan="2"><b>Transport</b></td>
+		</tr>
+		{% for region, transport in transports.items %}
+		<tr>
+			<td>{{ region }}</td>
+			<td>{{ transport }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+</div>
+{% endblock %}

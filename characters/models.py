@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-from elements.models import Region, Rank, GameBaseValues, ShortJob
+from elements.models import Region, Rank, GameBaseValues, ShortJob, Transport
+from elements.models import TravelMethod
 from elements.models import get_min_max_result, convert_damn, convert_timedelta
 from django.utils.timezone import utc
 
@@ -15,7 +16,7 @@ class Character(models.Model):
 
 	created = models.DateTimeField(auto_now_add=True)
 	alive = models.BooleanField(default=True)
-	user = models.OneToOneField(User)
+	user = models.OneToOneField(User, unique=True)
 	
 	rank = models.ForeignKey(Rank)
 	region = models.ForeignKey(Region)
@@ -24,7 +25,7 @@ class Character(models.Model):
 	damn = models.IntegerField(default=0)
 	banked = models.IntegerField(default=0)
 	
-	plane = models.CharField(max_length=31, default="None")
+	transport = models.ForeignKey(TravelMethod)
 	gun = models.CharField(max_length=31, default="None") 
 	bullets = models.IntegerField(default=0)
 	
@@ -55,6 +56,7 @@ class Character(models.Model):
 			region=Region.objects.get(id=region_id),
 			rank=Rank.objects.get(name="Cadet"),					#hardcoded lowest rank
 			hitpoints=Rank.objects.get(name="Cadet").hitpoints,
+			transport=TravelMethod.objects.get(name='Hitchhike'),
 		)
 		new_character.save()
 		
@@ -62,6 +64,10 @@ class Character(models.Model):
 			character = new_character,
 		)
 		timers.save()
+		
+		#create means of transport
+		CharacterTransport.create_transport(new_character)
+		
 	
 	
 	# return players basic information
@@ -120,19 +126,10 @@ class Character(models.Model):
 	
 	# set character rank 
 	def update_rank(self):
-		#if self.alliance:
-			#if self.alliance.leader == self:
-				#self.rank = Rank.objects.get(rank='Field Marshall')
-				#return
-			#elif self.alliance.diplomat == self:
-				#self.rank = Rank.objects.get(rank='Military Attache')
-				#return
-			#elif self.alliance.recruiter == self:
-				#self.rank = Rank.objects.get(rank='Mercenary Recruiter')
-				#return
+		#TODO put in allaince/capo ranks
 		
 		remove_ranks = ['Field Marshall', 'Military Attache', 'Mercenary Recruiter']
-		ranks = Rank.objects.exclude(name__in=remove_ranks)
+		ranks = Rank.objects.exclude(special=True)
 		
 		for rank in ranks:
 			if rank.min_xp <= self.xp and rank.max_xp >= self.xp:
@@ -329,6 +326,45 @@ class CharacterTimers(models.Model):
 		
 	
 
+
+class CharacterTransport(models.Model):
+	""" regions player and there means of transport """
+	
+	character = models.ForeignKey(Character)
+	region = models.ForeignKey(Region)
+	transport = models.ForeignKey(Transport, null=True, blank=True)
+	
+	class Meta:
+		unique_together = ("character", "region")
+		
+	def __unicode__(self):
+		return "%s %s %s" % (self.character, self.region, self.transport)
+		
+	
+	@staticmethod
+	def create_transport(character):
+		regions = Region.objects.all()
+		for region in regions:
+			new_transport = CharacterTransport(
+				character=character,
+				region=region,
+			)
+			new_transport.save()
+			
+	
+	# zou classmethod moeten zijn?
+	@staticmethod
+	def transport_overview(character):
+		chartransports = CharacterTransport.objects.filter(character=character).order_by('region__name')
+		overview = OrderedDict()
+		
+		for chartransport in chartransports:
+			if chartransport.transport == None:
+				overview[chartransport.region.name] = "Available"
+			else:
+				overview[chartransport.region.name] = chartransport.transport.name
+		
+		return overview
 	
 		
 

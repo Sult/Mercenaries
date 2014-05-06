@@ -4,6 +4,7 @@ from random import randint, choice
 from collections import namedtuple, OrderedDict
 from datetime import datetime, timedelta
 
+
 #convert damn to currency
 def convert_damn(damn):
 	return '{:,}'.format(damn) + " Dmn"
@@ -15,7 +16,7 @@ def get_upload_file_name(instance, filename):
 
 
 #get result for min/max/random equation
-def get_min_max_result(minimum, maximum, chance, character):
+def get_min_max_result(minimum, maximum, chance, rank):
 	# Example: minimum = 15, maximum = 50, chance = 40, character.rank.rank = 5
 	# max_ranks = 12
 	# base = (50 - 15)/ 12 * 5 = 14.58
@@ -24,7 +25,7 @@ def get_min_max_result(minimum, maximum, chance, character):
 	# total = integer of 15 + 14.58 + 3 = 32
 	
 	max_ranks = Rank.objects.all().count() - 2									#-2 for the special alliance ranks
-	base = (maximum - minimum + 0.0) / max_ranks * character.rank.rank			
+	base = (maximum - minimum + 0.0) / max_ranks * rank			
 	char_base = base / 100 * (100 - chance)
 	rand_base = randint(0, int(base - char_base))
 	total = rand_base + char_base + minimum
@@ -50,7 +51,6 @@ def convert_timedelta(duration):
 
 
 
-
 # Named tupple to return job results
 # check = True, job succeed. check=False, job failed. check=None, you are busted 
 # busted = True, in jail. busted=False in hospital
@@ -58,13 +58,52 @@ class Results(namedtuple('Results', "check busted flavor")):
 	def __new__(cls, check, busted=None, flavor=""):
 		return super(Results, cls).__new__(cls, check, busted, flavor)
 
+
+
+
+# return message + possible jail/hospital settings after a failed job
+def failed_job(job, character):
+	values = GameBaseValues.objects.get(id=1)
+	model = job.__class__.__name__
+	model = model.lower() + "_fail_chance"
+	chance = getattr(values, model)
 	
+	if job.timer:
+		# get fail chance from basegamevalues
+		caught = randint(0, 100)
+		if caught <= chance:		
+			timer = get_min_max_result(job.timer_min, job.timer_max, job.timer_random, character.rank.rank)
+			#check if jail or hospital
+			flavor = "test"
+			if job.legal:
+				inactive = "hospital"
+				flavor = "You got injured and ended up in hospital for %s." % convert_timedelta(timedelta(seconds=timer))
+				busted = False
+				character.charactertimers.update_timer(field="inactive", timer=timer, inactive=inactive)
+				return Results(check=False, busted=busted, flavor=flavor)
+			else:
+				inactive = "jail"
+				flavor = "You got busted and got jailed for %s." % convert_timedelta(timedelta(seconds=timer))
+				busted = True
+				character.charactertimers.update_timer(field="inactive", timer=timer, inactive=inactive)
+				return Results(check=False, busted=busted, flavor=flavor)
+	else:
+		if job.legal:
+			flavor = "You messed up and didn't get paid"
+		else:
+			flavor = "You failed but got away."	
+		
+		return Results(check=False, flavor=flavor)
+
+
+
 
 
 class Rank(models.Model):
 	""" Ranks with their stats """
 	
 	name = models.CharField(max_length=31, unique=True)
+	special = models.BooleanField()
 	rank = models.IntegerField()
 	min_xp = models.IntegerField()
 	max_xp = models.IntegerField()
@@ -77,16 +116,61 @@ class Rank(models.Model):
 
 	
 	
-class Plane(models.Model):
+class TravelMethod(models.Model):
 	""" all plane types you can buy in market """
 	
 	name = models.CharField(max_length=63, unique=True)
 	travel_timer = models.IntegerField()								# in seconds
+	price = models.IntegerField()
+	description = models.TextField()
+	image = models.FileField(upload_to=get_upload_file_name, null=True)
+	#cargo
+	guns = models.IntegerField()
+	cars = models.IntegerField()
+	booze = models.IntegerField()
+	drugs = models.IntegerField()
+	
+	
+	def __unicode__(self):
+		return self.name
+	
+
+
+class Transport(models.Model):
+	""" transport possible on location itself (enhances kill/survive attempts)"""
+	
+	name = models.CharField(max_length=63)
+	attack = models.IntegerField()							# percent on total attack
+	defense = models.IntegerField()							# percent vs total attack
+	price = models.IntegerField()
+	equip = models.IntegerField()							#time in minutes
+	
+	def __unicode__(self):
+		return self.name
+	
+	
+	
+		
+		
+		
+		
+		
+
+
+class Armor(models.Model):
+	""" armor objects that players can equip """
+	
+	rarity = models.IntegerField()
+	name = models.CharField(max_length=63)
+	defense = models.IntegerField()
+	price = models.IntegerField()
+	equip = models.IntegerField()
 	image = models.FileField(upload_to=get_upload_file_name, null=True)
 	
 	def __unicode__(self):
 		return self.name
 	
+
 
 
 class Gun(models.Model):
@@ -95,10 +179,9 @@ class Gun(models.Model):
 	rarity = models.IntegerField()
 	image = models.FileField(upload_to=get_upload_file_name, null=True)
 	
-	brand = models.CharField(max_length=63, unique=True)
-	model = models.CharField(max_length=127, unique=True)
-	
-	damage = models.FloatField()
+	name = models.CharField(max_length=63)
+	price = models.IntegerField()
+	damage = models.IntegerField()
 	magazine = models.IntegerField()
 	
 	
@@ -186,6 +269,11 @@ class GameBaseValues(models.Model):
 	booze_xp = models.IntegerField()
 	drugs_xp = models.IntegerField()
 	
+	#action fail chances 
+	shortjob_fail_chance = models.IntegerField()
+	mediumjob_fail_chance = models.IntegerField()
+	longjob_fail_chance = models.IntegerField()
+	
 	
 	#Booze base prices
 	beer = models.IntegerField()
@@ -238,6 +326,7 @@ class ShortJob(models.Model):
 	#get a random joblist 
 	@staticmethod
 	def get_job_list(character):
+		#TODO: Check if player has gun before adding practice with gun
 		all_jobs = ShortJob.objects.exclude(rarity__exact=0)
 		always = ShortJob.objects.filter(rarity=0)
 		pick_list = []
@@ -251,14 +340,14 @@ class ShortJob(models.Model):
 			counter += 1
 			job = choice(pick_list)
 			#job_list[job.name] = ShortJob.succes_chance(character, job)
-			job_list[job.name] = get_min_max_result(job.chance_min, job.chance_max, job.chance_random, character)
+			job_list[job.name] = get_min_max_result(job.chance_min, job.chance_max, job.chance_random, character.rank.rank)
 			
 			while job in pick_list:
 				pick_list.remove(job)
 
 		for job in always:
 			#job_list[job.name] = ShortJob.succes_chance(character, job)
-			job_list[job.name] = get_min_max_result(job.chance_min, job.chance_max, job.chance_random, character)
+			job_list[job.name] = get_min_max_result(job.chance_min, job.chance_max, job.chance_random, character.rank.rank)
 
 		return job_list
 	
@@ -287,10 +376,9 @@ class ShortJob(models.Model):
 		
 		
 	@staticmethod
-	def escort_service(chance, character):
-		escort = ShortJob.objects.get(name="Pay an escort for oral sex.")
+	def escort_service(job, chance, character):
 		roll = randint(0, 100)
-		cost = get_min_max_result(escort.damn_min, escort.damn_max, escort.damn_random, character)
+		cost = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
 		
 		#on succes you always pay for your try even if you dont get hp.
 		if roll <= chance:
@@ -316,7 +404,7 @@ class ShortJob(models.Model):
 			
 			if busted_roll <= 40:
 				# create jail timer
-				timer = get_min_max_result(escort.timer_min, escort.timer_max, escport.timer_random, character)
+				timer = get_min_max_result(job.timer_min, job.timer_max, job.timer_random, character.rank.rank)
 				character.charactertimers.update_timer(field="inactive", timer=timer, inactive="jail")
 				
 				character.damn -= cost
@@ -331,6 +419,57 @@ class ShortJob(models.Model):
 			else:
 				flavor = "There where no free escorts to be sent your way at this time of the day."
 				return Results(check=False, flavor=flavor)
+	
+	
+	
+	@staticmethod
+	def pickpocket(job, chance, character):
+		#random a character to stealfrom you excluded.
+		try:
+			target = Character.objects.exclude(user=character.user, alive=True).order_by('?')[0]
+		except IndexError:
+			flavor = "You are the last man standing! Can't steal from yourself"
+			return Results(check=False, flavor=flavor)
+		
+		roll = randint(0,100)
+		
+		#see if player succeeds
+		if roll <= chance:
+			#amount to steal
+			steal = (job.damn_min, job.damn_max, job.damn_random, character)
+			#see if target has enough money, otherwise steal what he has.
+			if target.damn > steal:
+				target.damn -= steal
+				target.save()
+				character.damn += steal
+				character.save()
+			else:
+				steal = target.damn
+				target.damn = 0
+				target.save()
+				character.damn += steal
+				character.save()
+			
+			#TODO: change charactername to link to character profile.
+			flavor = "You managed to steal %s from %s!" % (steal, target)
+			
+			#get difference in rank and get chance to get caught
+			rank = target.rank.rank - character.rank.rank
+			if rank < 1:
+				rank = 1
+			caught_chance = get_min_max_result(job.chance_min, job.chance_max, job.chance_random, rank)
+			caught_roll = randint(0, 100)
+			
+			#check if target caught the culprit
+			if caught_roll <= caught_chance:
+				#TODO: Send mail to target
+				flavor += "However your target caught you and will be notified."
+			
+			return Results(check=True, flavor=flavor)
+			
+		else:
+			return failed_job(job, character)
+		
 	
 	
 	
@@ -349,40 +488,19 @@ class ShortJob(models.Model):
 		
 		# if you succeed on getting an escort
 		elif job == escort:
-			return ShortJob.escort_service(chance, character)
+			return ShortJob.escort_service(job, chance, character)
 		
 		#	
 		elif roll <= chance:
 			#get reward in damn
-			reward = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character)
+			reward = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
 			#add to character
 			character.damn += reward
 			character.save()
 			flavor = "You where succesfull at your job and made %s out of it!" % convert_damn(reward)
 			return Results(check=True, flavor=flavor)
 		else:
-			# see if you can end up in hospital or jail.
-			if job.timer:
-				timer = get_min_max_result(job.timer_min, job.timer_max, job.timer_random, character)
-				#check if jail or hospital
-				if job.legal:
-					inactive = "hospital"
-					flavor = "You got injured and ended up in hospital for %s." % convert_timedelta(timedelta(seconds=timer))
-					busted = False
-				else:
-					inactive = "jail"
-					flavor = "You got busted and got jailed for %s." % convert_timedelta(timedelta(seconds=timer))
-					busted = True
-					
-				character.charactertimers.update_timer(field="inactive", timer=timer, inactive=inactive)
-				return Results(check=False, busted=busted, flavor=flavor)
-			else:
-				if job.legal:
-					flavor = "You messed up and didn't get paid"
-				else:
-					flavor = "You failed but got away."	
-				
-				return Results(check=False, flavor=flavor)
+			return failed_job(job, character)
 				
 	
 	
