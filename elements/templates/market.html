@@ -4,14 +4,15 @@
 
 
 {% block content %}
-<div style="text-align:center">
+<div>
+	<p>
 	Welcome to the market - Here you can buy everything you need to be a real mercenary.<br>
-	Be warned: "All your items, except for your houses, sell for only 50% of the original price.<br>
+	Be warned: "All your items, except for your houses, sell for only 80% of the original price.<br>
 	You are currently viewing the market in {{ request.user.character.region }}, and are waiting on the following deliveries:<br>
 	<br>
 	Make a waitlist of "incoming" items	
-	
-	<table align="center">
+	</p>
+	<table style="margin-left: auto; margin-right: auto; width">
 		<tr>
 			<td colspan="2"><b>Transport</b></td>
 		</tr>

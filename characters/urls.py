@@ -7,7 +7,6 @@ urlpatterns = patterns('',
 	url(r'^character/$', views.character, name='character'),
 	
 	#jobs
-	url(r'^medium_job/$', views.medium_job, name='medium job'),
 	url(r'^long_job/$', views.long_job, name='long job'),
 	url(r'^contraband/$', views.contraband, name='contraband'),
 	url(r'^group_crime/$', views.group_crime, name='group crime'),

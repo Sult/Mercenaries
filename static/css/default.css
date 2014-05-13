@@ -16,22 +16,6 @@ body {
 }
 
 
-table,tr,td,th{
-	margin:0 !important;
-}
-
-/*
-table{
-	padding:10px 0 10px 0;
-}
-*/
-
-
-/*
-td{
-	padding:5px 20px 5px 20px;
-}
-*/
 
 label{
 	display:inline-block;
@@ -96,47 +80,6 @@ p{
 	color: #67A0F5;
 }
 
-
-
-/*
-#menu{
-	display:block;
-	float:left;
-	clear:both;
-	width:960px;
-	height:54px;
-}
-
-#menu ul{
-	list-style: none;
-	margin-left:auto;
-	width:960px;
-}
-
-#menu li {
-	list-style: none;
-	padding: 0px;	
-	display: inline; 
-}
-
-#menu a {
-	float: left;
-	height: 36px;
-	display: block;
-	text-align: center;
-	text-decoration: none;
-	color: #ffffff;
-	font-weight: bold;
-	padding-top: 18px;
-	font-size: 18px;
-	padding-left:13px;
-	padding-right:13px;
-}
-
-#menu a:hover{
-	color:#86AEF9;
-}
-*/
 
 
 #leftmenu {

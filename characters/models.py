@@ -1,9 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
-from elements.models import Region, Rank, GameBaseValues, ShortJob, Transport
-from elements.models import TravelMethod
-from elements.models import get_min_max_result, convert_damn, convert_timedelta
 from django.utils.timezone import utc
+
+from elements.models import Rank, Region, GameBaseValues, Transport
+from elements.models import TravelMethod, Car, Gun, Armor
+from elements.models import get_min_max_result, convert_damn, convert_timedelta
 
 from datetime import datetime, timedelta
 from random import randint
@@ -88,7 +89,7 @@ class Character(models.Model):
 		#set currency
 		
 		possessions['damn'] = convert_damn(self.damn)
-		possessions["plane"] = self.plane
+		possessions["transport"] = self.transport
 		possessions["gun"] = self.gun
 		possessions["bullets"] = self.bullets
 		
@@ -128,7 +129,7 @@ class Character(models.Model):
 	def update_rank(self):
 		#TODO put in allaince/capo ranks
 		
-		remove_ranks = ['Field Marshall', 'Military Attache', 'Mercenary Recruiter']
+		remove_ranks = ['Field Marshall', 'Military Attache', 'Mercenary Recruiter', 'Marshall']
 		ranks = Rank.objects.exclude(special=True)
 		
 		for rank in ranks:
@@ -366,7 +367,64 @@ class CharacterTransport(models.Model):
 		
 		return overview
 	
+
+
+class CarPercentManager(models.Manager):
+	def hp_percent(self):
+		return int(self.hitpoints / (self.car.hitpoints / 100 + 0.0))
+
+
+class CarRepairCostManager(models.Manager):
+	def repair_cost(self):
+		to_repair = 100 - int(self.hitpoints / (self.car.hitpoints / 100 + 0.0))
+		price = int((self.car.price /100 +0.0) * to_repair)
+		return price
+
+
+class CharacterCar(models.Model):
+	""" cars a character owns plus the location they are in """
+	
+	character = models.ForeignKey(Character)
+	
+	car = models.ForeignKey(Car)
+	region = models.ForeignKey(Region)
+	hitpoints = models.IntegerField()
+	hp_percent = CarPercentManager()
+	repaircost = CarRepairCostManager()
+	
+	def __unicode__(self):
+		return "%s: %s" % (self.character, self.car)
 		
+
+
+
+class CharacterGun(models.Model):
+	""" cars a character owns plus the location they are in """
+	
+	character = models.ForeignKey(Character)
+	
+	gun = models.ForeignKey(Gun)
+	region = models.ForeignKey(Region)
+	
+	def __unicode__(self):
+		return "%s: %s" % (self.character, self.gun)
+		
+		
+		
+
+class CharacterArmor(models.Model):
+	""" cars a character owns plus the location they are in """
+	
+	character = models.ForeignKey(Character)
+	
+	armor = models.ForeignKey(Armor)
+	region = models.ForeignKey(Region)
+	
+	def __unicode__(self):
+		return "%s: %s" % (self.character, self.armor)
+	
+
+
 
 class Alliance(models.Model):
 	""" alliances to handle player groups their assets etc """
