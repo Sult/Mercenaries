@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block pagename %}mail{% endblock %}
+
+{% block content %}
+{% include "mail_menu.html" %}
+
+<div>
+	<h3>Messages</h3>
+
+	<a href="{% url 'compose' %}">New mail</a>
+	
+	<form name="actionform" action="" method="post">{% csrf_token %}
+	{% if mails|length > 0 %}
+		<table>
+			<tr>
+				<th colspan="2">Subject</th>
+				<th>From</th>
+				<th>Sent at</th>
+			</tr>
+		{% for mail in mails %}
+			<tr>
+				<td><input type="checkbox" name="mails"  value="{{ mail.id }}"></td>
+				<td>
+					<a href="{% url 'view mail' mail.id %}">{% if mail.read == False %}
+						<b>{{ mail.subject }}</b>
+						{% else %}
+							{{ mail.subject }}
+						{% endif %}
+						</a>
+					</td>
+				<td>{{ mail.sender }}</td>
+				<td>{{ mail.sent_at|date:'H:i d-m-Y' }}</td>
+			</tr>
+		{% endfor %}
+		
+			{# Paginator #}
+			<tr>
+				<td colspan="4" style="text-align: center;">
+					<span class="step-links">
+						{% if mails.has_previous %}
+						<a href="?page={{ mails.previous_page_number }}">previous</a>
+						{% endif %}
+						
+						<span class="current">
+							Page {{ mails.number }} of {{ mails.paginator.num_pages }}
+						</span>
+						
+						{% if mails.has_next %}
+						<a href="?page={{ mails.next_page_number }}">next</a>
+						{% endif %}
+					</span>
+				</td>
+			</tr>
+		
+			<tr>
+				<td colspan="4">
+					<select name="action" onchange="actionform.submit();">
+						<option value = 0 selected="selected"></option>
+						{% for value, name in actions %}
+							<option value="{{ value }}">{{ name }}</option>
+						{% endfor %}
+					</select>
+				</td>
+			</tr>
+		</table>
+	{% endif %}
+	
+	</form>	
+</div>	
+{% endblock %}
+
+

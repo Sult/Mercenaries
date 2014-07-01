@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+
+{% block pagename %}market{% endblock %}
+
+
+{% block content %}
+<div>
+	<h2> House in {{ request.user.extenduser.current_character }}</h2>
+
+	{% if house == None %}
+	You have no place to build a house here. You should get a "Building Lot" first.
+	
+	{% else %}
+	<table>
+		{% for part in house %}
+		<tr>
+			<td><b>{{ part.name|capfirst }}:</b></td>
+			<td>{{ part.rank }}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<br>
+	<br>
+	<table>
+		<tr>
+			<td colspan="2"><b>Storage</b></td>
+		</tr>
+		{% for key, value in storage.items %}
+			<tr>
+				<td>{{ key }}</td>
+				<td>{{ value }}</td>
+			</tr>
+		{% endfor %}
+	</table>
+	
+	{% endif %}
+
+</div>
+
+<div>
+{% if upgrades|length > 0 %}
+	<br>
+	<br>	
+	<h3>Available:</h3>
+	
+	{% for upgrade in upgrades %}
+	<div>
+		<br><br>
+		<b>{{ upgrade.name }}</b><br>
+		{{ upgrade.description }}
+		<br>
+		<b>Price: </b>{{ upgrade.view_price }}
+		<br>
+		<table style="float:left;">
+			<tr>
+				<td colspan="2"><b>Storage</b></td>
+			</tr>
+			{% for key, value in upgrade.storage_increase.items %}
+				<tr>
+					<td>{{ key }}</td>
+					<td>{{ value }}</td>
+				</tr>
+			{% endfor %}
+		</table>
+		<br><br>
+		<form style="float:right;" action="{% url 'housing' %}" method="post">{% csrf_token %}
+			<input type="hidden" name="buy" value="{{ upgrade.id }}">
+			<input type="submit" value="Upgrade" />
+		</form>
+		<br>
+		<br>
+	</div>
+	{% endfor %}
+	
+{% endif %}
+</div>
+
+
+
+<!--
+<form action="{% url 'housing' %}" method="post">{% csrf_token %}
+	<input type="hidden" name="buy" value="{{ value.upgrade.id }}">
+	<input type="submit" value="Buy" />
+</form>
+-->
+
+
+{% endblock %}

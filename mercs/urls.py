@@ -4,15 +4,14 @@ from django.conf import settings
 #from django.contrib import admin
 #admin.autodiscover()
 
+
 urlpatterns = patterns('',
-	# Examples:
-	# url(r'^$', 'mercs.views.home', name='home'),
-	# url(r'^blog/', include('blog.urls')),
 
 	#url(r'^admin/', include(admin.site.urls)),
     url(r'^', include('users.urls')),
     url(r'^', include('characters.urls')),
     url(r'^', include('elements.urls')),
+    url(r'^', include('mail.urls')),
 )
 
 if settings.DEBUG:

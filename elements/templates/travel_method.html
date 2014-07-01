@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block pagename %}market{% endblock %}
+
+{% block content %}
+<div>
+	<form action="{% url 'travel method' %}" method="post">{% csrf_token %}
+		<input type="hidden" name="sell" value="{{ player_transport.name }}">
+		<tr>
+			<td colspan="1"><h3>Your way to travel</h3></td>
+			{{ result }}
+		</tr>
+		<tr>
+			<table>
+				<tr>
+					<td>Name</td>
+					<td>{{ player_transport.name }}</td>
+				</tr>
+				<tr>
+					<td>Travel Timer</td>
+					<td>{{ player_transport.show_travel_timer }}</td>
+				</tr>
+				{% if player_transport.name != "Hitchhike" %}
+				<tr>
+					<td>Sell Price</td>
+					<td>{{ player_transport.show_sell_price }}</td>
+				</tr>
+				{% endif %}
+				<tr>
+					<td colspan="2">{{ player_transport.description }}</td>
+				</tr>
+			</table>
+			{% if player_transport.name != "Hitchhike" %}
+			<table>
+				<tr>
+					<th colspan="2">Cargo:</th>
+				</tr>
+				<tr>
+					<td>Booze</td>
+					<td>{{ player_transport.booze }}</td>
+				</tr>
+				<tr>
+					<td>Narcotics</td>
+					<td>{{ player_transport.narcotics }}</td>
+				</tr>
+				<tr>
+					<td>Guns</td>
+					<td>{{ player_transport.guns }}</td>
+				</tr>
+				<tr>
+					<td>Cars</td>
+					<td>{{ player_transport.cars }}</td>
+				</tr>
+			</table>
+			<input type="submit" value="Sell" />
+			{% endif %}
+		</tr>
+	</form>
+</div>
+
+<div>
+	<h3>Available</h3></td>
+	{% for transport in other_transports %}
+		<div>
+			<form action="{% url 'travel method' %}" method="post">{% csrf_token %}
+				<input type="hidden" name="buy" value="{{ transport.name }}">
+					<table>
+						<tr>
+							<td>Name</td>
+							<td>{{ transport.name }}</td>
+						</tr>
+						<tr>
+							<td>Travel Timer</td>
+							<td>{{ transport.show_travel_timer }}</td>
+						</tr>
+						<tr>
+							<td>Price</td>
+							<td>{{ transport.show_price }}</td>
+						</tr>
+						<tr>
+							<td colspan="2">{{ transport.description }}</td>
+						</tr>
+					</table>
+					<table>
+						<tr>
+							<th colspan="2">Cargo:</th>
+						</tr>
+						<tr>
+							<td>Booze</td>
+							<td>{{ transport.booze }}</td>
+						</tr>
+						<tr>
+							<td>Narcotics</td>
+							<td>{{ transport.narcotics }}</td>
+						</tr>
+						<tr>
+							<td>Guns</td>
+							<td>{{ transport.guns }}</td>
+						</tr>
+						<tr>
+							<td>Cars</td>
+							<td>{{ transport.cars }}</td>
+						</tr>
+					</table>
+					{% if player_transport.name == "Hitchhike" %}
+					<input type="submit" value="Buy" />
+					{% endif %}
+				</form>	
+			</div>
+			{% endfor %}
+		</tr>
+	</table>
+</div>
+{% endblock %}

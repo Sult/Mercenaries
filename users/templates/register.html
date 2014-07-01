@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block pagename %}register{% endblock %}
+
 
 {% block content %}
 
@@ -10,6 +12,7 @@
 			<tr>
 				<td>{{ field.label }}</td>
 				<td>{{ field }}</td>
+				<td>{{ field.error }}</td>
 			</tr>
 			{% endfor %}
 			<tr>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block pagename %}market{% endblock %}
+
+
+{% block content %}
+{% for key, values in transports.items %}
+<div>
+	<h3>Regional Transport</h3>
+	
+	{{ result }}
+	
+	<form action="{% url 'transport' %}" method="post">{% csrf_token %}
+	
+	{% if key == "buy" %}
+		<table>
+			<tr>
+		{% for transport in values %}
+				<td>
+					<input type="radio" name="{{ key }}" value="{{ transport.name }}" >
+						<div>
+						{{ transport }}
+						<table>
+							<tr>
+								<td>Price</td>
+								<td>{{ transport.buy_price }}</td>
+							</tr>
+							<tr>
+								<td>Attack</td>
+								<td>{{ transport.attack }}</td>
+							</tr>
+							<tr>
+								<td>Defense</td>
+								<td>{{ transport.defense }}</td>
+							</tr>
+							<tr>
+								<td>Equip</td>
+								<td>{{ transport.equip_timer }}</td>
+							</tr>
+						</table>
+					</div>
+				</td>
+		{% endfor %}
+			</tr>
+		</table>
+	<input type="submit" value="Buy" />
+	
+	{% elif key == "sell" %}
+	
+	<input type="hidden" name="{{ key }}" value="{{ values.name }}">
+	{{ values }}
+	<table>
+		<tr>
+			<td>Price</td>
+			<td>{{ values.sell_price }}</td>
+		</tr>
+		<tr>
+			<td>Attack</td>
+			<td>{{ values.attack }}</td>
+		</tr>
+		<tr>
+			<td>Defense</td>
+			<td>{{ values.defense }}</td>
+		</tr>
+	</table>
+
+	<input type="submit" value="Sell" />
+	
+	{% endif %}
+</div>
+
+{% endfor %}
+{% endblock %}

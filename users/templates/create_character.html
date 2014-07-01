@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block pagename %}choose a name{% endblock %}
+
+
+{% block content %}
+<div>
+	{{ text }}
+	
+	<form action="{% url 'create character' %}" method="post">{% csrf_token %}
+		{{ name_form.as_p }}
+		
+		<input type="submit" value="Create" />
+	</form>
+</div>
+{% endblock %}

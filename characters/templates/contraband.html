@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block pagename %}travel{% endblock %}
+
+{% block content %}
+
+{% if messages|length > 0 %}
+<div>
+	{% for message in messages %}
+	{{ message }}<br>
+	{% endfor %}
+</div>
+{% endif %}
+
+<div>
+	<form action="{% url 'contraband' %}" method="post">{% csrf_token %}
+		<table>
+			<tr>
+				<th>Name</th>
+				<th>Buy/Sell</th>
+				<th>Unit</th>
+				<th>Price</th>
+			</tr>
+		{% for item in booze %}
+			<tr>
+				<td>{{ item.name|capfirst }}</td>
+				<td><input type="text" name="{{ item.name }}"></td>
+				<td>{{ item.on_character }}</td>
+				<td>{{ item.price }}</td>
+			</tr>
+		{% endfor %}
+			<tr>
+				<td><input type="radio" name="booze" value="buy" checked>buy</td>
+				<td><input type="radio" name="booze" value="sell">sell</td>
+			</tr>
+		</table>
+
+		<table>
+			<tr>
+				<th>Name</th>
+				<th>Buy/Sell</th>
+				<th>Unit</th>
+				<th>Price</th>
+			</tr>
+		{% for item in narcotics %}
+			<tr>
+				<td>{{ item.name|capfirst }}</td>
+				<td><input type="text" name="{{ item.name }}"></td>
+				<td>{{ item.on_character }}</td>
+				<td>{{ item.price }}</td>
+			</tr>
+		{% endfor %}
+			<tr>
+				<td><input type="radio" name="narcotics" value="buy" checked>buy</td>
+				<td><input type="radio" name="narcotics" value="sell">sell</td>
+			</tr>
+		</table>
+		
+		<input type="submit" value="Buy/Sell" />
+	</form>
+</div>
+{% endblock %}

@@ -5,10 +5,10 @@ from characters import views
 urlpatterns = patterns('',
 	url(r'^$', views.index, name='index'),
 	url(r'^character/$', views.character, name='character'),
+	url(r'^contraband/$', views.contraband, name='contraband'),
 	
 	#jobs
 	url(r'^long_job/$', views.long_job, name='long job'),
-	url(r'^contraband/$', views.contraband, name='contraband'),
 	url(r'^group_crime/$', views.group_crime, name='group crime'),
 	url(r'^travel/$', views.travel, name='travel'),
 	url(r'^blood/$', views.blood, name='blood'),

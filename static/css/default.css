@@ -1,7 +1,9 @@
+
 *{
 	margin: 0 auto 0 auto;
 	text-align:left;
 }
+
 
 body {
 	margin: 0;
@@ -27,19 +29,13 @@ input{
 }
 		
 
-h1, h2, h3{
+h1, h2, h3, h4{
 	
 	font-weight:bold;
 	padding:10px 0 10px 0;
 	color:#054dbc;
 }
 
-h4{
-	font-size:15px;
-	font-weight:bold;
-	padding-bottom:5px;
-	color:#054dbc;
-}
 
 p{
 	margin:10px 0 10px 0;
@@ -82,6 +78,7 @@ p{
 
 
 
+/*
 #leftmenu {
 	margin-top: 15px;
 	width: 190px;
@@ -118,6 +115,45 @@ p{
 	padding-bottom: 8px;
 	font-size: 18px;
 }
+*/
+
+#sidebar {
+	margin-top: 15px;
+	width: 190px;
+	float: left;
+	background-color: #1C478E;
+	border-radius: 10px;
+	padding: 15px 20px 10px 10px;
+}
+
+#sidebar ul{
+	list-style: none;
+	padding: 0;
+}
+
+#sidebar li{
+	list-style: none;
+	padding: 3px 0 8px 0;	
+}
+
+#sidebar a, #sidebar a:visited{
+	color: #ffffff;
+	text-decoration: none;
+	font-weight: bold;
+	font-size: 14px;
+	padding-left: 10px;
+}
+
+#sidebar a:hover{
+	color:#86AEF9;
+}
+
+#sidebar h4 {
+	color: #FFFFFF;
+	padding-bottom: 8px;
+	font-size: 18px;
+}
+
 
 
 #content{

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block pagename %}market of {{ request.user.character.region }}{% endblock %}
+{% block pagename %}market{% endblock %}
 
 
 {% block content %}
@@ -16,12 +16,27 @@
 		<tr>
 			<td colspan="2"><b>Transport</b></td>
 		</tr>
-		{% for region, transport in transports.items %}
+		{% for transport in all_transports %}
 		<tr>
-			<td>{{ region }}</td>
-			<td>{{ transport }}</td>
+			<td>{{ transport.region }}</td>
+			{% if transport.transport == None %}
+			<td>Available</td>
+			{% else%}
+			<td>{{ transport.transport }}</td>
+			{% endif %}
 		</tr>
 		{% endfor %}
 	</table>
+	
+	<br>
+	<br>
+	
+	<table>
+		<tr>
+			<td>Put the house information here?</td>
+		</tr>
+	</table>
+	
 </div>
+
 {% endblock %}

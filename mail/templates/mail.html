@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block pagename %}mail{% endblock %}
+
+{% block content %}
+
+<div>
+	<br>
+	<br>
+	{% include "mail_menu.html" %}
+	<br>
+	<br>
+</div>
+
+<div>
+	<form name="mailform" action="{% url 'view mail' mail.id %}" method="post">{% csrf_token %}
+		<select name="options" onchange="mailform.submit();">
+			<option value = 0 selected="selected"></option>
+		{% for value, name in actions %}
+			<option value="{{ value }}">{{ name }}</option>
+		{% endfor %}
+		</select>
+	</form>
+</div>
+
+<div>
+To: {{ mail.to }}<br>
+From: {{ mail.sender.name }}<br>
+{{ mail.view_sent_at }}<br>
+</div>
+
+<div>
+{{ mail.body|linebreaks }}
+</div>
+
+{% endblock %}

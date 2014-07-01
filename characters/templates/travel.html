@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block pagename %}travel{% endblock %}
+
+{% block content %}
+
+{% if part == "form" %}
+<div>
+	You are currently in <b>{{ request.user.extenduser.current_character }}</b>
+	<br>
+	<br>	
+	Choose your destination:
+
+	<form action="{% url 'travel' %}" method="post">{% csrf_token %}
+		<table>
+			{% for travel in travel_to %}
+			<tr>
+				<td><input type="radio" name="travel_to" value="{{ travel.region }}">{{ travel.region }}</td>
+				<td class='floatright'>{{ travel.cost_damn }}</td>
+			</tr>
+			{% endfor %}
+			<tr>
+				<td colspan="2" style="text-align:right;"><input type="submit" value="Travel" /></td>
+			</tr>
+		</table>
+	</form>
+</div>
+
+
+
+{% elif part == "result" %}
+<div>
+	 {{ result }} 
+</div>
+
+{% endif %}
+
+{% endblock %}

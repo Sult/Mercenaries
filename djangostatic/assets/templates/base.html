@@ -9,14 +9,14 @@
 
 	{% block js %}{% endblock %}
 	
-	<title>Bastards - {% block pagename %}{% endblock %}</title>
+	<title>Mercs - {% block pagename %}{% endblock %}</title>
 </head>
 
 <body>
 	<div id="container">
 	
 		<div id="header">
-			<h1><span class="blue-text"><a href="{% url 'index' %}">Bastards</a></span>{% block header_1b %}{% endblock %}</h1>
+			<h1><span class="blue-text"><a href="{% url 'index' %}">Mercenaries</a></span>{% block header_1b %}{% endblock %}</h1>
 		</div>
         
 <!--
@@ -29,25 +29,14 @@
 		</div>
 -->
 	
-		<div id="leftmenu">
-		{% block leftmenu %}
 <!--
-			make a subtemplate for menu?
--->
-			<h4>Bastards</h4>
-			
-			<li><a href="someplace.html">fake link</a></li>
-			<li><a href="someplace.html">and another</a></li>
-			
-			{% if user.is_authenticated %}
-			<br>
-			<br>
-			<li><a href="{% url 'logout' %}">Logout</a></li>
-			{% endif %}
-			
+		<div id="leftmenu">
+-->		
+		<div id="sidebar">
+		{% block leftmenu %}
+		{% include "leftmenu.html" %}
 		{% endblock %}
 		</div>
-
 		<div id="content">
 			{% block content %}{% endblock %}
 		</div>
