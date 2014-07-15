@@ -12,21 +12,36 @@
 	<br>
 	Make a waitlist of "incoming" items	
 	</p>
-	<table style="margin-left: auto; margin-right: auto; width">
-		<tr>
-			<td colspan="2"><b>Transport</b></td>
-		</tr>
-		{% for transport in all_transports %}
-		<tr>
-			<td>{{ transport.region }}</td>
-			{% if transport.transport == None %}
-			<td>Available</td>
-			{% else%}
-			<td>{{ transport.transport }}</td>
-			{% endif %}
-		</tr>
-		{% endfor %}
-	</table>
+	<div>
+		<table>
+			<tr>
+				<td colspan="2"><b>Transport</b></td>
+			</tr>
+			{% for transport in all_transports %}
+			<tr>
+				<td>{{ transport.region }}</td>
+				{% if transport.transport == None %}
+				<td>Available</td>
+				{% else%}
+				<td>{{ transport.transport }}</td>
+				{% endif %}
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+	<div>
+		<table>
+			<tr>
+				<td colspan="2"><b>Houses</b></td>
+			</tr>
+			{% for region, house in all_houses.items %}
+			<tr>
+				<td>{{ region }}</td>
+				<td>{{ house }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
 	
 	<br>
 	<br>

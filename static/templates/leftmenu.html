@@ -2,20 +2,21 @@
 <ul>
 	{% if user.is_authenticated and request.path != "/create_character/" %}
 	<li><b>User</b></li>
-	<li><a href="{% url 'character' %}">Character</a></li>
-	<li><a href="{% url 'travel' %}">Travel</a></li>
+	<li><a href="{% url 'character' %}">Status</a></li>
+	<li><a href="{% url 'garage' %}">Garage</a></li>
 	
 	<li>Actions</li>
 	<li><a href="{% url 'short job' %}">Short Job</a></li>
 	<li><a href="{% url 'medium job' %}">Medium Job</a></li>
-	<li><a href="{% url 'contraband' %}">Smuggling</a></li>
+	<li><a href="{% url 'contraband' %}">Contraband</a></li>
+	<li><a href="{% url 'travel' %}">Travel</a></li>
 	
 	<li>{{ request.user.character.region }}</li>
 	<li><a href="{% url 'market' %}">Market</a></li>
 	schuif uit menu?
 	<li><a href="{% url 'transport' %}">Transport</a></li>
 	<li><a href="{% url 'travel method' %}">Travel Method</a></li>
-	<li><a href="{% url 'housing' %}">Housing</a></li>
+	<li><a href="{% url 'housing' %}">Safehouse</a></li>
 	
 	<li>Communications</li>
 	<li><a href="{% url 'mail folder' 'inbox' %}">Mail</a></li>

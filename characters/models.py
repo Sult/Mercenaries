@@ -13,7 +13,36 @@ from collections import OrderedDict, namedtuple
 
 
 
-
+class Contraband(models.Model):
+	""" Need to hold players booze/narcotic posessions, helicoptr and house. """
+	
+	beer = models.IntegerField(default=0)
+	cider = models.IntegerField(default=0)
+	cognaq = models.IntegerField(default=0)
+	rum = models.IntegerField(default=0)
+	vodka = models.IntegerField(default=0)
+	whiskey = models.IntegerField(default=0)
+	wine = models.IntegerField(default=0)
+	
+	cocaine = models.IntegerField(default=0)
+	tabacco = models.IntegerField(default=0)
+	morphine = models.IntegerField(default=0)
+	glue = models.IntegerField(default=0)
+	amfetamines = models.IntegerField(default=0)
+	heroin = models.IntegerField(default=0)
+	cannabis = models.IntegerField(default=0)
+	
+	
+	def __unicode__(self):
+		return "Contraband holder"
+	
+	@staticmethod
+	def create():
+		new = Contraband()
+		new.save()
+		return new
+	
+	
 
 class Character(models.Model):
 	""" User characters that hold the personal game stats """
@@ -25,13 +54,12 @@ class Character(models.Model):
 	
 	rank = models.ForeignKey('elements.Rank')
 	region = models.ForeignKey('elements.Region')
-	alliance = models.ForeignKey('Alliance', null=True)
+	alliance = models.ForeignKey('Alliance', null=True, on_delete=models.SET_NULL)
 	
-	damn = models.IntegerField(default=0)
+	damn = models.IntegerField(default=20000)
 	banked = models.IntegerField(default=0)
 	
-	transport = models.ForeignKey('elements.TravelMethod')
-	gun = models.CharField(max_length=31, default="None") 
+	#transport = models.ForeignKey('elements.TravelMethod')
 	bullets = models.IntegerField(default=0)
 	
 	short_jobs = models.IntegerField(default=0)
@@ -65,7 +93,6 @@ class Character(models.Model):
 			region=region,
 			rank=elements.models.Rank.objects.get(name="Cadet"),					#hardcoded lowest rank
 			hitpoints=elements.models.Rank.objects.get(name="Cadet").hitpoints,
-			transport=elements.models.TravelMethod.objects.get(name='Hitchhike'),
 		)
 		new_character.save()
 		
@@ -74,16 +101,26 @@ class Character(models.Model):
 		)
 		timers.save()
 		
+		#create travel method
+		CharacterTravel.create(new_character)
+		
+		
 		#create means of transport
 		CharacterTransport.create_transport(new_character)
 		
 		#create contraband
 		CharacterContraband.create(new_character)
 		
-		#create mailbox
+		#create mailbox and send welcome mail
 		mail.models.MailFolder.create_standard_folders(new_character)
+		category = elements.models.Mail.NOTIFICATION
+		subject = """Welcome to "Mercenaries" """
+		body = "Welcome %s\nBla bla en nog watblaldieblaazanaaa!" % new_character.name			
+		elements.models.Mail.send_mail(new_character, category, subject, body)
 		
-	
+		
+		
+		
 	
 	# return players basic information
 	def basic_information(self):
@@ -103,8 +140,7 @@ class Character(models.Model):
 		#set currency
 		
 		possessions['damn'] = elements.models.convert_damn(self.damn)
-		possessions["transport"] = self.transport
-		possessions["gun"] = self.gun
+		possessions["transport"] = self.charactertravel.transport
 		possessions["bullets"] = self.bullets
 		
 		return possessions
@@ -130,8 +166,7 @@ class Character(models.Model):
 		
 		return work
 		
-		
-
+	
 	# check if you got enough xp to get to next rank
 	def check_rank(self):
 		if self.xp > self.rank.max_xp:
@@ -152,6 +187,22 @@ class Character(models.Model):
 				self.hitpoints = self.rank.hitpoints
 				self.save()
 				return
+	
+	
+	#check if player had enough damns to give
+	def check_damn(self, amount):
+		if self.damn > amount:
+			return True
+		else:
+			return False
+	
+	
+	#add/remove damn for character
+	def update_damn(self, amount):
+		# if character in allaince make sure to remove taxes
+		
+		self.damn += amount
+		self.save()
 		
 	
 	
@@ -229,15 +280,24 @@ class Character(models.Model):
 	def travel(self, location):
 		region = elements.models.Region.objects.get(name=location)
 		cost = self.region.get_travel_cost(region, self)
-		if self.damn < cost:
+		if not self.check_damn(cost):
 			flavor = "You don't have enough money to travel to %s." % region
 			return flavor
 		else:
 			now = datetime.utcnow().replace(tzinfo=utc)
-			travel_time = timedelta(seconds=self.transport.travel_timer)
+			#travel_time = timedelta(seconds=self.transport.travel_timer)
+			travel_time = timedelta(seconds=self.charactertravel.transport.travel_timer)
+			
+			#check if you are traveling form a house with helipad
+			try:
+				helipad = CharacterHouse.objects.get(character=self, region = self.region)
+				timer = now + travel_time - timedelta(minutes=5)
+			except ObjectDoesNotExist:
+				timer = now + travel_time
+			
+			self.charactertimers.travel = timer
 			self.region = region
-			self.charactertimers.travel = now + travel_time
-			self.damn -= cost
+			self.update_damn(-cost)
 			self.save()
 			self.charactertimers.save()
 			
@@ -304,7 +364,7 @@ class CharacterTimers(models.Model):
 	kill = models.DateTimeField(default=now)					#1 hour timer
 	bullet_deal = models.DateTimeField(default=now)				#1 hour timer
 	booze = models.DateTimeField(default=now)					#every 30 minutes available for xp
-	narcotics = models.DateTimeField(default=now)					#every 30 minutes available for xp
+	narcotics = models.DateTimeField(default=now)				#every 30 minutes available for xp
 	
 	#solo actions
 	short_job = models.DateTimeField(default=now)				#1 minute 30 seconds
@@ -316,6 +376,8 @@ class CharacterTimers(models.Model):
 	organised_crime = models.DateTimeField(default=now)			#6 hour timer	(rob a bank)
 	raid = models.DateTimeField(default=now)					#12 hour timer	(help army on mission)
 	mega_oc = models.DateTimeField(default=now)					#24 hour timer 	(rob a national bank or other big place)	
+	smuggle = models.DateTimeField(default=now)					#2 day timer
+	
 	
 	#jail timers
 	location = models.NullBooleanField(default=True)			#True for active, False for in jail, None for in hospital
@@ -336,6 +398,7 @@ class CharacterTimers(models.Model):
 		fields["organised crime"]= ""
 		fields["raid"] = ""
 		fields["mega oc"] = ""
+		fields["smuggle"] = ""
 		fields["travel"] = ""
 		fields["blood"] = ""
 		fields["race"] = ""
@@ -345,7 +408,7 @@ class CharacterTimers(models.Model):
 		now = datetime.utcnow().replace(tzinfo=utc)
 
 		Link = namedtuple("Link", "url timer")
-		group_crimes = ("heist", "organised crime", "mega oc", "raid")
+		group_crimes = ("heist", "organised crime", "mega oc", "raid", "smuggle")
 		
 		for field in fields:			
 			timer = getattr(self, field.replace(" ", "_"))
@@ -405,8 +468,6 @@ class CharacterTimers(models.Model):
 		
 		
 		
-	
-	
 	#set a timer
 	def update_timer(self, field, **kwargs):
 		values = elements.models.GameBaseValues.objects.get(id=1)
@@ -431,26 +492,13 @@ class CharacterTimers(models.Model):
 		
 
 
+
 class CharacterContraband(models.Model):
 	""" keep track on characters contraband """
 	
 	character = models.OneToOneField(Character)
-	
-	beer = models.IntegerField(default=0)
-	cider = models.IntegerField(default=0)
-	cognaq = models.IntegerField(default=0)
-	rum = models.IntegerField(default=0)
-	vodka = models.IntegerField(default=0)
-	whiskey = models.IntegerField(default=0)
-	wine = models.IntegerField(default=0)
-	
-	cocaine = models.IntegerField(default=0)
-	tabacco = models.IntegerField(default=0)
-	morphine = models.IntegerField(default=0)
-	glue = models.IntegerField(default=0)
-	amfetamines = models.IntegerField(default=0)
-	heroin = models.IntegerField(default=0)
-	cannabis = models.IntegerField(default=0)
+	contraband = models.OneToOneField(Contraband)
+
 	
 	def __unicode__(self):
 		return "%s's contraband" % self.character
@@ -459,8 +507,11 @@ class CharacterContraband(models.Model):
 	#create object for character
 	@staticmethod
 	def create(character):
+		contraband = Contraband.create()
+		
 		character_contraband = CharacterContraband(
 			character=character,
+			contraband=contraband,
 		)
 		character_contraband.save()
 	
@@ -481,17 +532,18 @@ class CharacterContraband(models.Model):
 	#get maximum of booze or narcs on character
 	def get_maximum(self, contraband):
 		from_character = getattr(self.character.rank, contraband)
-		from_transport = getattr(self.character.transport, contraband)
+		from_transport = getattr(self.character.charactertravel.transport, contraband)
 		total = from_character + from_transport
 		return total
 		
 		
 	#get current amount of booze or narcotics currently wielded
 	def get_current(self, contraband):
+
 		items = self.get_booze_or_narcotics(contraband)
 		total = 0
 		for item in items:
-			total += getattr(self, item)
+			total += getattr(self.contraband, item)
 		
 		return total
 		
@@ -505,10 +557,11 @@ class CharacterContraband(models.Model):
 		for item in items:
 			name = item
 			price = elements.models.convert_damn(getattr(self.character.region.regionprices, item))
-			on_character = getattr(self, item)
+			on_character = getattr(self.contraband, item)
 			inventory.append(Contraband(name=name, price=price, on_character=on_character))
 		
 		return inventory	
+
 
 
 
@@ -517,7 +570,7 @@ class CharacterTransport(models.Model):
 	
 	character = models.ForeignKey(Character)
 	region = models.ForeignKey('elements.Region')
-	transport = models.ForeignKey('elements.Transport', null=True, blank=True)
+	transport = models.ForeignKey('elements.Transport', null=True)
 	
 	class Meta:
 		unique_together = ("character", "region")
@@ -537,19 +590,6 @@ class CharacterTransport(models.Model):
 			new_transport.save()
 			
 	
-	## zou classmethod moeten zijn?
-	#@staticmethod
-	#def transport_overview(character):
-		#chartransports = CharacterTransport.objects.filter(character=character).order_by('region__name')
-		#overview = OrderedDict()
-		
-		#for chartransport in chartransports:
-			#if chartransport.transport == None:
-				#overview[chartransport.region.name] = "Available"
-			#else:
-				#overview[chartransport.region.name] = chartransport.transport.name
-		
-		#return overview
 	
 
 
@@ -561,16 +601,54 @@ class CharacterCar(models.Model):
 	car = models.ForeignKey('elements.Car')
 	region = models.ForeignKey('elements.Region')
 	hitpoints = models.IntegerField()
-	safe = models.BooleanField(default=False)
+	safe = models.NullBooleanField(default=False)						#False =unsafe, Null=travelstorage, True=House Storage
 	
 	def __unicode__(self):
 		return "%s: %s" % (self.character, self.car)
 	
 	# get car hp in percent
 	def hp_percent(self):
-		return int(self.hitpoints / (self.car.hitpoints / 100 + 0.0))
-
-
+		percent = int(self.hitpoints / (self.car.max_hitpoints + 0.0) * 100.0)
+		if percent < 1:
+			percent = 1
+		return percent
+	
+	#sell price (in integer)
+	def price(self):
+		return int(self.hp_percent() * self.car.price / 100 * 0.75)
+	
+	#sell price
+	def sell_price(self):
+		price = elements.models.convert_damn(self.price())
+		return price
+	
+	#get repair price
+	def repair_cost(self):
+		repair_percent = 100 - self.hp_percent()
+		cost_per_percent = int(self.car.price / 100 + 0.0)
+		return repair_percent * cost_per_percent
+	
+	#repair car
+	def repair_car(self):
+		self.hitpoints = self.car.max_hitpoints
+		self.save()
+	
+		
+	#get total from function by list of ids
+	@staticmethod
+	def total_from_function(id_list, function, character):
+		repair_cost = 0
+		try:
+			for pk in id_list:
+				repair_cost += getattr(CharacterCar.objects.get(id=pk, character=character), function)()
+			return repair_cost
+		except ObjectDoesNotExist:
+			return False
+			
+		
+		
+	
+	
 
 class CharacterGun(models.Model):
 	""" cars a character owns plus the location they are in """
@@ -600,16 +678,73 @@ class CharacterArmor(models.Model):
 	
 
 
+
+class CharacterTravel(models.Model):
+	"""Character transport method, and the storage for it"""
+	
+	character = models.OneToOneField(Character)
+	transport = models.ForeignKey('elements.TravelMethod')
+		
+	car1 = models.ForeignKey(CharacterCar, null=True, related_name="+", on_delete=models.SET_NULL)
+	car2 = models.ForeignKey(CharacterCar, null=True, related_name="+", on_delete=models.SET_NULL) 
+	
+	def __unicode__(self):
+		return "%s: %s" % (self.character, self.transport)
+
+	
+	#create first
+	@staticmethod
+	def create(character):
+		new = CharacterTravel(
+			character=character,
+			transport=elements.models.TravelMethod.objects.get(name='Hitchhike'),
+		)
+		new.save()
+	
+	#see how many room for cars is left
+	def car_room_left(self):
+		counter = 0
+		if self.car1 == None:
+			counter += 1
+		if self.car2 == None:
+			counter += 1
+		return counter
+	
+	
+	#save a car on helicopter
+	def add_car(self, car):
+		if self.car1 == None:
+			self.car1 = car
+		elif self.car2 == None:
+			self.car2 = car
+		self.save()
+	
+	#remove a car from helicopter
+	def remove_car(self, car):
+		if self.car1 == car:
+			self.car1 = None
+		elif self.car2 == car:
+			self.car2 == None
+		self.save()
+		
+		
+	
+
 class CharacterHouse(models.Model):
 	""" holds players house max 1 per region """
 	
 	character = models.ForeignKey(Character)
 	region = models.ForeignKey('elements.Region')
+	contraband = models.OneToOneField(Contraband)
 	
 	house = models.ForeignKey('elements.Housing', related_name="+", null=True)
 	garage = models.ForeignKey('elements.Housing', related_name="+", null=True)
 	basement = models.ForeignKey('elements.Housing', related_name="+", null=True)
 	garden = models.ForeignKey('elements.Housing', related_name="+", null=True)
+	
+	car1 = models.ForeignKey(CharacterCar, null=True, related_name="+", on_delete=models.SET_NULL)
+	car2 = models.ForeignKey(CharacterCar, null=True, related_name="+", on_delete=models.SET_NULL) 
+	
 	
 	class Meta:
 		unique_together = ["character", "region"]
@@ -633,7 +768,6 @@ class CharacterHouse(models.Model):
 		return show_house
 	
 	
-	
 	#show total (smuggle)space
 	def total_storage(self):
 		subs = ['house', 'garage', 'basement', 'garden']
@@ -651,13 +785,47 @@ class CharacterHouse(models.Model):
 						storage[space] = getattr(field, space)
 			
 		return storage
-				
 		
+	#returns a list for market page that shows where you got a house
+	@staticmethod
+	def show_houses(character):
+		all_regions = elements.models.Region.objects.all().order_by('name')
+		print all_regions
+		houses = OrderedDict()
+		
+		for region in all_regions:
+			try:
+				housing = CharacterHouse.objects.get(character=character, region=region)
+				houses[region.name] = housing.house.name
+			except ObjectDoesNotExist:
+				houses[region.name] = "No house"
 	
+		return houses
 	
+	#see how many room for cars is left
+	def car_room_left(self):
+		counter = 0
+		if self.car1 == None:
+			counter += 1
+		if self.car2 == None:
+			counter += 1
+		return counter
 	
+	#save a car on helicopter
+	def add_car(self, car):
+		if self.car1 == None:
+			self.car1 = car
+		elif self.car2 == None:
+			self.car2 = car
+		self.save()
 	
-	
+	#remove a car from helicopter
+	def remove_car(self, car):
+		if self.car1 == car:
+			self.car1 = None
+		elif self.car2 == car:
+			self.car2 == None
+		self.save()
 
 
 class Alliance(models.Model):
@@ -696,8 +864,8 @@ class Location(models.Model):
 	category = models.CharField(max_length=3, choices=LOCATION_CATEGORIES)
 	
 	region = models.ForeignKey('elements.Region')
-	alliance = models.ForeignKey(Alliance, null=True)
-	owner = models.ForeignKey(Character, null=True)
+	alliance = models.ForeignKey(Alliance, null=True, on_delete=models.SET_NULL)
+	owner = models.ForeignKey(Character, null=True, on_delete=models.SET_NULL)
 	
 	def __unicode__(self):
 		return self.name

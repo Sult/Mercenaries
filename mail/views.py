@@ -10,7 +10,8 @@ from django.contrib.auth.decorators import login_required
 from mercs.decorators import still_alive
 from mail.models import MailFolder, Mail
 from mail.forms import MailForm
-from mail.forms import get_actions, mail_actions, sent_mail, mail_options
+from mail.forms import get_actions, mail_actions, send_mail, mail_options
+from mercs.helpers import sort_queryset_by_field
 
 
 
@@ -24,8 +25,32 @@ def mail_folder(request, folder_name):
 	if request.POST:
 		mail_actions(request.POST, character)
 	
+	
+	# sorting
+	if request.GET:
+		order_by = request.GET.get('order_by', "id")
+		
+		if session['order_by'] == order_by:
+			if session['order_by_last']:
+				session['order_by_last'] = False
+			else:
+				session['order_by_last'] = True
+		else:
+			session['order_by'] = order_by
+			if not session['order_by_last']:
+				session['order_by_last'] = True
+		
+		qs = Mail.objects.filter(folder=folder)
+		mail_list = sort_queryset_by_field(qs, order_by, session["order_by_last"])
+		
+		print session['order_by_last']
+		print session['order_by']
+		
+		
+	else:
+		mail_list = Mail.objects.filter(folder=folder).order_by('-sent_at')
+	
 	#paginator
-	mail_list = Mail.objects.filter(folder=folder).order_by('-sent_at')
 	paginator = Paginator(mail_list, 15)
 	page = request.GET.get("page")
 	try:
@@ -53,7 +78,7 @@ def compose(request):
 		new_mail = MailForm(request.POST)
 		
 		if new_mail.is_valid():
-			sent_mail(request.POST, character)
+			send_mail(request.POST, character)
 			url = reverse('mail folder', kwargs={"folder_name": "inbox"})
 			return HttpResponseRedirect(url)
 	
@@ -71,21 +96,21 @@ def view_mail(request, mail_id):
 		mail.read = True
 		mail.save()
 	
+	#mailoptions
+	actions = [["reply", "reply"], ["forward", "forward"], ["archive", "move to archive"], ["trash", "move to trash"]]
+	
 	if request.POST:
 		result = mail_options(request.POST, mail)
-		print result
-		if type(result) is type({}):
-			new_mail = MailForm(result)
-			return render(request, "compose.html", {"new_mail": new_mail})
+		if result:
+			if type(result) is type({}):
+				new_mail = MailForm(result)
+				return render(request, "compose.html", {"new_mail": new_mail})
+			else:
+				url = reverse('mail folder', kwargs={"folder_name": "inbox"})
+				return HttpResponseRedirect(url)
 		else:
-			url = reverse('mail folder', kwargs={"folder_name": "inbox"})
-			return HttpResponseRedirect(url)
-	
-	#mailoptions
-	actions = [["reply", "reply"], ["forward", "forward"], ["archive", "move to archive"], ["trash", "move to trash"]]	
-	
-	print mail.body
-	
+			return render(request, "mail.html", {"mail": mail, "actions": actions})
+			
 	return render(request, "mail.html", {"mail": mail, "actions": actions})
 	
 	

@@ -36,14 +36,6 @@ h1, h2, h3, h4{
 	color:#054dbc;
 }
 
-/*
-h4{
-	font-size:15px;
-	font-weight:bold;
-	padding-bottom:5px;
-	color:#054dbc;
-}
-*/
 
 p{
 	margin:10px 0 10px 0;
@@ -218,3 +210,6 @@ li {
 	display: none;
 }
 
+.input_number{
+	width: 100px
+}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block pagename %}gun depot{% endblock %}
+
+{% block content %}
+	<h2>Gun Depot</h2>
+	
+	{% if guns|length == 0 %}
+	You have no cars in {{ request.user.extenduser.current_character }}
+	
+	{% else %}
+	<form action="{% url 'gun depot' %}" method="post">{% csrf_token %}
+		{% for gun in guns %}
+			{% if forloop.first %}
+		<table>
+			<tr style="font-weight:bold;">
+				<td>Name</td>
+				<td>Category</td>
+				<td>Health</td>
+				<td>Price</td>
+			</tr>
+			{% endif %}
+			
+			<tr>
+				<td><input type="checkbox" name="car" value="{{ car.id }}">{{ car.car.name }}</td>
+				<td>{{ car.car.category }}</td>
+				<td>{{ car.hp_percent }}%</td>
+				<td>{{ car.sell_price }}</td>
+			</tr>
+			
+			{% if forloop.last %}
+		
+			{# Paginator #}
+			<tr>
+				<td colspan="4" style="text-align: center;">
+					<span class="step-links">
+						{% if cars.has_previous %}
+						<a href="?page={{ cars.previous_page_number }}">previous</a>
+						{% endif %}
+						
+						<span class="current">
+							Page {{ cars.number }} of {{ cars.paginator.num_pages }}
+						</span>
+						
+						{% if cars.has_next %}
+						<a href="?page={{ cars.next_page_number }}">next</a>
+						{% endif %}
+					</span>
+				</td>
+			</tr>
+		
+		</table>
+			{% endif %}
+		{% endfor %}
+	
+	Add options list
+
+	</form>
+	{% endif %}
+</div>
+{% endblock %}

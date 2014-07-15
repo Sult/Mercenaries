@@ -100,6 +100,7 @@ def add_regions():
 		)
 		region_prices.save()
 
+
 def add_base_values():
 	values = GameBaseValues(
 		#All game timers (in seconds)
@@ -120,6 +121,7 @@ def add_base_values():
 		organised_crime = 21600,
 		raid = 43200,
 		mega_oc = 86400,
+		smuggle = 43200,
 		
 		#action xp values
 		short_job_xp = 1,
@@ -181,10 +183,10 @@ def add_base_values():
 def add_travel_methods():
 	the_methods = (
 		("Hitchhike", 7200, 0, "Hitchhike along with a caravan of the army.", 0, 0, 0, 0, 20),
-		("Johnsen R8", 3600, 100000, "Army grade hummer that you can ride yourself.", 1, 0, 5, 1, 40),
-		("Casta 4", 2700, 250000, "Small low powerd helicopter.", 2, 0, 10, 3, 70),
-		("EC 391", 1800, 1000000, "Twin engine army helicopter.", 5, 1, 20, 6, 100),
-		("PH-421 Transcopter", 1800, 2500000, "Fast heavyweigth transport helicopter", 10, 2, 30, 10, 140),
+		("Johnsen R8", 3600, 100000, "Army grade hummer that you can ride yourself.", 0, 0, 5, 1, 40),
+		("Casta 4", 2700, 250000, "Small low powerd helicopter.", 1, 0, 10, 3, 70),
+		("EC 391", 1800, 1000000, "Twin engine army helicopter.", 3, 0, 20, 6, 100),
+		("PH-421 Transcopter", 1800, 2500000, "Fast heavyweigth transport helicopter", 5, 2, 30, 10, 140),
 	)
 	
 	
@@ -380,7 +382,7 @@ def add_cars():
 			speed=car[3],
 			seats=car[4],
 			max_seats=car[5],
-			hitpoints=car[6],
+			max_hitpoints=car[6],
 			price=car[7],
 		)
 		new_car.save()
@@ -454,7 +456,6 @@ def add_single_player_jobs():
 	the_jobs = (
 		("Work as security at a bank.",	True, 9, False, False, True, 20,	70,	35, 250,	2500,	25),
 		("Help the casino 'deal' with some problems.",	False, 9, False, False, True, 20,	75,	25,400,	3100,	25),
-		("Test your luck in a scratch cards.",	True, 7, True, False, False, 10,	45,	15,0, 0, 0),
 		("Steal a car from the corner of the street.",	False, 6, True, False, False, 10,	50,	20,0, 0, 0),
 		("Ambush and hijack a car at a country road.",	False, 5, True, False, False, 10,	55,25,0, 0, 0),
 		("Contest in the regional skeet shooting.",	True, 7, False, True, False, 10,	45,	15,0, 0, 0),
@@ -562,10 +563,6 @@ def add_medium_failures():
 		("Help the casino 'deal' with some problems.", "Once you started 'extracting' some information, cops showed up and put you in jail for TIMER.", False, 2, True, 220, 630, 15),
 		("Help the casino 'deal' with some problems.", "You got your ass kicked by the target leaving you on a hospital trip for TIMER.", True, 2, True, 160, 420, 20),
 		
-		("Test your luck in a scratch cards.", "You forgot to bring your wallet.", True, 6, False, 0, 0, 0),
-		("Test your luck in a scratch cards.", "The ticket you found was so damaged it couldnt be accepted anymore.", True, 2, False, 0, 0, 0),
-		("Test your luck in a scratch cards.", "You got distracted and forgot what you where about to do.", True, 2, False, 0, 0, 0),
-		
 		("Steal a car from the corner of the street.", "You could not find a suitable car.", True, 4, False, 0, 0, 0),
 		("Steal a car from the corner of the street.", "The cops caught you in the act and put you in jail for TIMER.", False, 1, True, 320, 590, 20),
 		("Steal a car from the corner of the street.", "You cut yourself kicking in the window and you are TIMER in hospital.", True, 2, True, 160, 500, 20),
@@ -636,7 +633,7 @@ def add_houses():
 	the_houses = (
 		#House
 		("Building Lot", Housing.HOUSE, 0, 40000, 0, 0, 0, 0, "Surveyed and bounded plot of land that is set aside for constructing a building."),
-		("Bungalow", Housing.HOUSE, 1, 50000, 5, 10, 0, 0, "Small house with only a single story and a nice varanda."),
+		("Bungalow", Housing.HOUSE, 1, 50000, 5, 10, 0, 0, "Small house with only a single story and a nice veranda."),
 		("House", Housing.HOUSE, 2, 100000, 10, 25, 0, 0, "Reasonable sized house of two stories with room for more."),
 		("Villa", Housing.HOUSE, 3, 500000, 20, 45, 0, 0, "Large and luxurious country house in its own grounds."),
 		("Mansion", Housing.HOUSE, 4, 500000, 30, 75, 0, 0, "Large and impressive house. It won't get better than this."), 
@@ -657,7 +654,7 @@ def add_houses():
 		("Garden", Housing.GARDEN, 1, 20000, 0, 0, 5, 0, "Area of ground where flowers and plants grow."),
 		("Shed", Housing.GARDEN, 2, 50000, 0, 0, 15, 0, "A small barn. A little hut meant for storing in the backyard."),
 		("Pond", Housing.GARDEN, 3, 100000, 0, 0, 35, 0, "Small type of lake. Dug by men to decorate the garden."),
-		("Dock Terrace", Housing.GARDEN, 4, 500000, 0, 0, 35, 0, "Jetty near the water where a small boat could be docked.\n(This building gives acces to the 'Smuggle' group crime."),
+		("Boathouse", Housing.GARDEN, 4, 500000, 0, 0, 35, 0, "Jetty near the water where a small boat could be docked.\n(This building gives access to the 'Smuggle' group crime."),
 	)
 	
 	

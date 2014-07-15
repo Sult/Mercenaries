@@ -12,4 +12,4 @@ class ExtendUser(models.Model):
 		
 	#returns current character
 	def current_character(self):
-		return self.user.character_set.get(alive=True).region.name
+		return self.user.character_set.get(alive=True)

@@ -2,9 +2,11 @@ from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 
 from elements.models import Transport, TravelMethod, Housing
-from characters.models import CharacterTransport, CharacterHouse
+from characters.models import CharacterTransport, CharacterHouse, Contraband
 
 from collections import namedtuple
+
+
 
 def validate_transport(postdata, character):
 	buy = True
@@ -17,19 +19,17 @@ def validate_transport(postdata, character):
 	# check if character has enough damn if so, add item
 	if buy:
 		transport = Transport.objects.get(name=postdata['buy'])
-		if character.damn < transport.price:
+		if not character.check_damn(transport.price):
 			return "You don't have enough damns to give!"
 		else:
-			character.damn -= transport.price
+			character.update_damn(-transport.price)
 			character_transport.transport = transport
 			character_transport.save()
-			character.save()
 			return True
 	
 	#if selling, set to default and add damn
 	else:
-		character.damn += int(character_transport.transport.price / 2)
-		character.save()
+		character.update_damn(+ int(character_transport.transport.price / 2))
 		character_transport.transport = None
 		character_transport.save()
 		return True
@@ -46,21 +46,25 @@ def validate_travel_method(postdata, character):
 	# if buying new travel method
 	if buy:
 		travel_method = TravelMethod.objects.get(name=postdata['buy'])
-		if character.damn < travel_method.price:
+		if not character.check_damn(travel_method.price):
 			return "You don't have enough damns to give!"
 		else:
-			character.damn -= travel_method.price
-			character.transport = travel_method
-			character.save()
+			character.update_damn(- travel_method.price)
+			character.charactertravel.transport = travel_method
+			character.charactertravel.save()
 			return True
 	
 	#when selling a travel method
 	else:
-		travel_method = TravelMethod.objects.get(name="Hitchhike")
-		character.damn += int(character.transport.price / 2)
-		character.transport = travel_method
-		character.save()
-		return True
+		if character.charactertravel.car1 == None and character.charactertravel.car2 == None:
+			travel_method = TravelMethod.objects.get(name="Hitchhike")
+			character.update_damn(+ int(character.charactertravel.transport.price / 2))
+			character.charactertravel.transport = travel_method
+			character.save()
+			character.charactertravel.save()
+			return True
+		else:
+			return "You have to unload your cars first."
 		
 
 
@@ -122,16 +126,16 @@ def housing_validation(postdata, character):
 	#create CharacterHouse object
 	building = Housing.objects.get(id=int(postdata['buy']))
 	
-	if character.damn < building.price:
+	if not character.check_damn(building.price):
 		return "You do not have enough damn to build this building lot."
 	
 	#create new house
 	if building_lot.id == building.id:
-		character.damn -= building_lot.price
-		character.save()
+		character.update_damn(-building_lot.price)
 		
 		new_house = CharacterHouse(
 			character=character,
+			contraband=Contraband.create(),
 			region=character.region,
 			house=building_lot,
 		)
@@ -139,8 +143,7 @@ def housing_validation(postdata, character):
 		return True
 	
 	else:
-		character.damn -= building.price
-		character.save()
+		character.update_damn(-building.price)
 		house = CharacterHouse.objects.get(character=character, region=character.region)
 		setattr(house, building.category, building)
 		house.save()

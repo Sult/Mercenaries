@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block pagename %}travel{% endblock %}
+{% block pagename %}contraband{% endblock %}
 
 {% block content %}
 
@@ -12,8 +12,14 @@
 {% endif %}
 
 <div>
+	<h3>Contraband in {{ request.user.extenduser.current_character }}</h3>
+	<p style="text-align: center;">
+		Maximum items of booze: {{ max_booze }}<br>
+		Maximum items of narcotics: {{ max_narcotics }}
+	</p>
+	
 	<form action="{% url 'contraband' %}" method="post">{% csrf_token %}
-		<table>
+		<table class="floatleft">
 			<tr>
 				<th>Name</th>
 				<th>Buy/Sell</th>
@@ -23,7 +29,7 @@
 		{% for item in booze %}
 			<tr>
 				<td>{{ item.name|capfirst }}</td>
-				<td><input type="text" name="{{ item.name }}"></td>
+				<td><input type="text" name="{{ item.name }}" class="input_number"></td>
 				<td>{{ item.on_character }}</td>
 				<td>{{ item.price }}</td>
 			</tr>
@@ -34,7 +40,7 @@
 			</tr>
 		</table>
 
-		<table>
+		<table class="floatright">
 			<tr>
 				<th>Name</th>
 				<th>Buy/Sell</th>
@@ -44,7 +50,7 @@
 		{% for item in narcotics %}
 			<tr>
 				<td>{{ item.name|capfirst }}</td>
-				<td><input type="text" name="{{ item.name }}"></td>
+				<td><input type="text" name="{{ item.name }}" class="input_number"></td>
 				<td>{{ item.on_character }}</td>
 				<td>{{ item.price }}</td>
 			</tr>

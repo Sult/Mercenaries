@@ -25,6 +25,15 @@ def login_user(request):
 		user = login_form.login(request)
 		if user:
 			login(request, user)
+			
+			#add needed sessions
+			if "order_by" not in request.session:
+				request.session['order_by'] = 'id'
+			if "order_by_last" not in request.session:
+				request.session['order_by_last'] = False
+			if "postdata" not in request.session:
+				request.session['postdata'] = ""
+			
 			try:
 				character = request.user.character_set.get(alive=True)
 				return HttpResponseRedirect(request.POST.get('next') or reverse('index'))

@@ -30,6 +30,7 @@ def short_job(request):
 	#check if player is ready for job
 	if timercheck.check:
 		part = "form"
+		pagename = "short job"
 	else:
 		return render(request, "inactive.html", {"result": timercheck})
 		
@@ -48,7 +49,7 @@ def short_job(request):
 			
 			#update timer and xp
 			character.perform_action("short_job")
-			return render(request, "singleplayerjob.html", {"results": results, "part": part})
+			return render(request, "singleplayerjob.html", {"results": results, "part": part, "pagename": pagename})
 			
 		except KeyError:
 			return HttpResponseRedirect(reverse("short job"))
@@ -60,7 +61,8 @@ def short_job(request):
 	for job in job_list:
 		jobs[job] = session['short_job_list'][job]
 	
-	return render(request, "singleplayerjob.html", {"jobs": jobs, "part": part})
+	return render(request, "singleplayerjob.html", {"jobs": jobs, "part": part, "pagename": pagename})
+
 
 
 @login_required
@@ -77,6 +79,7 @@ def medium_job(request):
 	#check if player is ready for job
 	if timercheck.check:
 		part = "form"
+		pagename = "medium job"
 	else:
 		return render(request, "inactive.html", {"result": timercheck})
 		
@@ -90,7 +93,6 @@ def medium_job(request):
 			job = request.POST["job"]
 			#chance = session['medium_job_list'][job]
 			chance = 100
-			#make different loot results
 			results = SinglePlayerJob.check_to_succeed(job, chance, character)
 		
 			#remove short_job_list and timer
@@ -102,7 +104,7 @@ def medium_job(request):
 		except KeyError:
 			return HttpResponseRedirect(reverse("medium job"))
 		
-		return render(request, "singleplayerjob.html", {"results": results, "part": part})
+		return render(request, "singleplayerjob.html", {"results": results, "part": part, "pagename": pagename})
 	
 	#order job list
 	job_list = sorted(session['medium_job_list'],  key=session['medium_job_list'].get, reverse=True)
@@ -111,7 +113,7 @@ def medium_job(request):
 	for job in job_list:
 		jobs[job] = session['medium_job_list'][job]
 	
-	return render(request, "singleplayerjob.html", {"jobs": jobs, "part": part})
+	return render(request, "singleplayerjob.html", {"jobs": jobs, "part": part, "pagename": pagename})
 
 
 
@@ -125,13 +127,11 @@ def market(request):
 	active = character.charactertimers.check_if_active()
 	if active != True:
 		return render(request, "inactive.html", {"result": active})
-	
-	#not sure this overview is needed
-	character = request.user.character_set.get(alive=True)
-	#all_transports = CharacterTransport.transport_overview(request.user.character)
+
 	all_transports = CharacterTransport.objects.filter(character=character).order_by('region__name')
+	all_houses = CharacterHouse.show_houses(character)
 	
-	return render(request, "market.html", {"all_transports": all_transports})
+	return render(request, "market.html", {"all_transports": all_transports, "all_houses": all_houses})
 
 
 
@@ -181,13 +181,13 @@ def travel_method(request):
 	if active != True:
 		return render(request, "inactive.html", {"result": active})
 	
-	remove = ["Hitchhike", character.transport.name]
+	remove = ["Hitchhike", character.charactertravel.transport.name]
 	other_transports = TravelMethod.objects.exclude(name__in=remove)
-	player_transport = character.transport
+	player_transport = character.charactertravel.transport
+	
 	
 	if request.POST:
 		try:
-			print request.POST
 			result = validate_travel_method(request.POST, character)
 			if result == True:
 				return HttpResponseRedirect(reverse("travel method"))

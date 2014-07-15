@@ -60,18 +60,22 @@ class Mail(models.Model):
 	
 	PLAYER = "player"
 	PROMOTION = "promotion"
-	CRIME = "crime"
+	NOTIFICATION = "notification"
+	INVITATION = "invitation"
+	BUSTOUT = "bustout"
 	ALLIANCE = "alliance"
 	MAILCATEGORIES = (
 		(PLAYER, "player"),
 		(PROMOTION, "promotion"),
-		(CRIME, "crime"),
+		(NOTIFICATION, "notification"),
+		(INVITATION, "invitation"),
+		(BUSTOUT, "bustout"),
 		(ALLIANCE, "alliance"),
 	)
 	
 	folder = models.ForeignKey(MailFolder)
 	
-	sender = models.ForeignKey(Character, related_name="+")
+	sender = models.ForeignKey(Character, related_name="+", null=True)
 	to = models.ForeignKey(Character, related_name="+")
 	read = models.BooleanField(default=False)
 	sent_at = models.DateTimeField(auto_now_add=True)
@@ -96,16 +100,15 @@ class Mail(models.Model):
 	def view_sent_at(self):
 		return self.sent_at.strftime("%H:%M %d-%m-%Y")
 
-
-#class Messagebox(models.Model):
-	#""" holds incomming messages """
 	
-	#character = models.ForeignKey(Character, related_name"+")
-	
-
-
-
-
-	
-
-
+	#send mail
+	@staticmethod
+	def send_mail(to_character, category, subject, body):
+		new_mail = Mail(
+			folder=MailFolder.objects.get(character=to_character, name="inbox"),
+			category=category,
+			to=to_character,
+			subject=subject,
+			body=body,
+		)
+		new_mail.save()

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block pagename %}{{ tag }}{% endblock %}
+
+{% block content %}
+{# TODO: Make this into a alert popup? #}
+<div>
+	{{ message }}
+	<form action="" method="post">{% csrf_token %}
+		<button name="confirm" type="submit" value="True">Yes</button>
+		<button name="confirm" type="submit" value="False">No</button>
+	</form>
+</div>
+
+{% endblock %}

@@ -3,6 +3,7 @@ from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 
 from characters.models import CharacterCar, CharacterArmor, CharacterGun, Character
+from mail.models import Mail
 
 from random import randint, choice, shuffle
 from collections import namedtuple, OrderedDict
@@ -165,6 +166,8 @@ class Transport(models.Model):
 	price = models.IntegerField()
 	equip = models.IntegerField()							#time in minutes
 	
+	image = models.FileField(upload_to=get_upload_file_name, null=True)
+	
 	def __unicode__(self):
 		return self.name
 	
@@ -277,7 +280,7 @@ class Car(models.Model):
 	speed = models.IntegerField()
 	seats = models.IntegerField()
 	max_seats = models.IntegerField()
-	hitpoints = models.IntegerField()
+	max_hitpoints = models.IntegerField()
 	price = models.IntegerField()
 	
 	
@@ -288,7 +291,7 @@ class Car(models.Model):
 
 
 	def random_hp(self):
-		return randint(1, self.hitpoints)
+		return randint(1, self.max_hitpoints)
 		
 		
 	
@@ -330,7 +333,7 @@ class Region(models.Model):
 		y = abs(self.y - destination.y)
 		distance = sqrt(x**2 + y**2)
 		
-		cost = int(distance * character.transport.travel_modifier)
+		cost = int(distance * character.charactertravel.transport.travel_modifier)
 		return cost
 
 	
@@ -403,6 +406,7 @@ class GameBaseValues(models.Model):
 	organised_crime = models.IntegerField()
 	raid = models.IntegerField()
 	mega_oc = models.IntegerField()
+	smuggle = models.IntegerField()
 	
 	#action xp values
 	short_job_xp = models.IntegerField()
@@ -494,12 +498,18 @@ class Housing(models.Model):
 	def view_price(self):
 		return convert_damn(self.price)
 	
-	#view rank for tempalte (rendered in form)
+	#view rank for template (rendered in form)
 	def view_rank(self):
 		if self.rank < 4:
 			return self.rank
 		else:
 			return "MAX"
+			
+	
+	
+	
+	
+	
 	
 	
 	#returns the difference in storage space
@@ -507,7 +517,6 @@ class Housing(models.Model):
 		#get previous rank of building or True
 		try:
 			current = Housing.objects.get(category=self.category, rank=self.rank-1)
-			print current
 		except ObjectDoesNotExist:
 			current = True
 		
@@ -632,6 +641,7 @@ class SinglePlayerJob(models.Model):
 		drugdealer = SinglePlayerJob.objects.get(flavor="Rob a drugdealer on the street.")
 		
 		roll = randint(0, 100)
+
 		
 		# if you try practice accuracy
 		if job == shoot:
@@ -656,8 +666,7 @@ class SinglePlayerJob(models.Model):
 			
 			if job.damn:
 				damn = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
-				character.damn += damn
-				character.save()
+				character.update_damn(+ damn)
 				
 				results['succes'] = "Good job, you made %s out of it." % convert_damn(damn)
 				
@@ -672,7 +681,7 @@ class SinglePlayerJob(models.Model):
 				add_car.save()
 				
 				flavor = "You managed to get yourself a %s. " % car.name
-				if add_car.hitpoints < car.hitpoints:
+				if add_car.hitpoints < car.max_hitpoints:
 					damage = 100-add_car.hp_percent()
 					#TODO: add % before damage
 					flavor += "However it took %s%% damage." % damage
@@ -731,7 +740,7 @@ class SinglePlayerJob(models.Model):
 		
 		#on succes you always pay for your try even if you dont get hp.
 		if roll <= chance:
-			if character.damn >= cost:
+			if character.check_damn(cost):
 				
 				#check if small or medium job
 				if job.category == SinglePlayerJob.MEDIUM:
@@ -745,7 +754,7 @@ class SinglePlayerJob(models.Model):
 				else:
 					character.hitpoints = character.max_health()
 				
-				character.damn -= cost
+				character.update_damn(- cost)
 				results['succes'] = "After almost 30 minutes of pure pleasure you feel refreshed. However you had to pay %s for it." % convert_damn(cost)
 				
 			else:
@@ -762,13 +771,13 @@ class SinglePlayerJob(models.Model):
 			if busted_roll <= 40:
 				# create jail timer
 				if job.category == SinglePlayerJob.MEDIUM:
-					timer = get_min_max_result(200, 620, 30, character.rank.rank)
+					timer = get_min_max_result(180, 520, 30, character.rank.rank)
 				else:
-					timer = get_min_max_result(40, 210, 30, character.rank.rank)
+					timer = get_min_max_result(40, 180, 30, character.rank.rank)
 					
 				character.charactertimers.update_timer(field="inactive", timer=timer, inactive="jail")
 				
-				character.damn -= cost
+				character.update_damn(- cost)
 				results['failed'] = "At the moment you paid your escort you get arrested and are in jail for %s. Even worse, they kept your %s!" % (convert_timedelta(timedelta(seconds=timer)), convert_damn(cost))
 				
 				if character.damn < 0:
@@ -802,22 +811,25 @@ class SinglePlayerJob(models.Model):
 			# see if you are pickpocketing, or stealign a car or gun
 			if job.category == SinglePlayerJob.SHORT:
 				job_type = "pickpocket"
-				steal = (job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
+				steal = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
+				
 				
 				#see if target has enough money, otherwise steal what he has.
-				if target.damn > steal:
-					target.damn -= steal
-					character.damn += steal
+				if target.check_damn(steal):
+					target.update_damn(- steal)
+					character.update_damn(steal)
+					
 				else:
 					steal = target.damn
 					target.damn = 0
-					character.damn += steal
+					character.update_damn(steal)
+					
 				
 				target.save()
 				character.save()
 				
 				#TODO: change charactername to link to character profile.
-				flavor = "You managed to steal %s from %s!" % (steal, target)
+				flavor = "You managed to steal %s from %s!" % (convert_damn(steal), target)
 				
 			elif job.category == SinglePlayerJob.MEDIUM:
 				if "car" in job.flavor:
@@ -830,8 +842,8 @@ class SinglePlayerJob(models.Model):
 						return results
 					
 					#TODO: change charactername to link to character profile.
-					flavor = "You managed to steal a %s from %s!" % (car.name, car.character)
-					target= car.character
+					flavor = "You managed to steal a %s from %s!" % (car.car.name, car.character.name)
+					target = car.character
 					
 					#change owner of the stolen car
 					car.character = character
@@ -847,7 +859,7 @@ class SinglePlayerJob(models.Model):
 						return results
 					
 					#TODO: change charactername to link to character profile.
-					flavor = "You managed to steal a %s from %s!" % (gun.name, gun.character)
+					flavor = "You managed to steal a %s from %s!" % (gun.gun.name, gun.character.name)
 					target= gun.character
 					
 					#change owner of the stolen car
@@ -865,82 +877,33 @@ class SinglePlayerJob(models.Model):
 			
 			#check if target caught the culprit
 			if caught_roll <= caught_chance:
-				flavor += "However your target caught you and will be notified."
+				flavor += " However your target caught you and will be notified."
 				
-				#TODO: Send mail to target
-				#to: target
-				# if job_type == "pickpocket":
-				#TODO: make culprit a link
-					#message = "%s mangaged to steal %s damn from you." % (character, steal)
-				#elif job_type == "car":
-					#message = "%s mangaged to steal a %s (car) from you." % (character, car.name)
-				#elif job_type == "gun":
-					#message = "%s mangaged to steal a %s (gun) from you." % (character, gun.name)
+				#TODO: create links to view character and stolen goods
+				to_character = target
+				category = Mail.NOTIFICATION
+				
+				if job_type == "pickpocket":
+					subject = "Some damn got stolen!"
+					body = "%s mangaged to steal %s damn from you." % (character, steal)
+				elif job_type == "car":
+					subject = "A car has been stolen!"
+					body = "%s mangaged to steal a %s from you." % (character, car.car.name)
+				elif job_type == "gun":
+					subject = "A gun has been stolen!"
+					body = "%s mangaged to steal a %s from you." % (character, gun.name)
+					
+				Mail.send_mail(to_character, category, subject, body)
 			
 			results['succes'] = flavor
 			return results
+		
 		
 		#if action fails:
 		else:
 			failed = random_object_by_model("failedsingleplayerjob", job=job)
 			return failed.failed_job(character)
 			
-		
-	
-	#@staticmethod
-	#def pickpocket(job, chance, character):
-		##random a character to stealfrom you excluded.
-		#results = {}
-		#try:
-			#target = Character.objects.filter(region=character.region).exclude(user=character.user, alive=True).order_by('?')[0]
-		#except IndexError:
-			#flavor = "You are the only mercenary in this region. Can't steal from yourself"
-			#results['failed'] = flavor
-			#return results
-		
-		#roll = randint(0,100)
-		
-		##see if player succeeds
-		#if roll <= chance:
-			##amount to steal
-			#steal = (job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
-			##see if target has enough money, otherwise steal what he has.
-			#if target.damn > steal:
-				#target.damn -= steal
-				#target.save()
-				#character.damn += steal
-			#else:
-				#steal = target.damn
-				#target.damn = 0
-				#target.save()
-				#character.damn += steal
-			
-			#character.save()	
-			##TODO: change charactername to link to character profile.
-			#flavor = "You managed to steal %s from %s!" % (steal, target)
-			
-			##get difference in rank and get chance to get caught
-			#rank = target.rank.rank - character.rank.rank
-			#if rank < 1:
-				#rank = 1
-			
-			#caught_chance = get_min_max_result(job.chance_min, job.chance_max, job.chance_random, rank)
-			#caught_roll = randint(0, 100)
-			
-			##check if target caught the culprit
-			#if caught_roll <= caught_chance:
-				##TODO: Send mail to target
-				#flavor += "However your target caught you and will be notified."
-			
-			#results['succes'] = flavor
-			#print results
-			#return results
-			
-		#else:
-			#failed = random_object_by_model("failedsingleplayerjob", job=job)
-			#return failed.failed_job(character)
-	
-	
 	
 	
 	
@@ -955,10 +918,9 @@ class SinglePlayerJob(models.Model):
 			
 			if roll <= chance:
 				if item == "damn":
-					damn = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
-					character.damn += damn
-					character.save()
-					flavor = "Good job, you made %s out of it.\n" % convert_damn(damn)
+					reward = get_min_max_result(job.damn_min, job.damn_max, job.damn_random, character.rank.rank)
+					character.update_damn(reward)
+					flavor = "Good job, you made %s out of it.<br>" % convert_damn(reward)
 					if 'succes' in results:
 						results['succes'] += flavor
 					else:
@@ -974,10 +936,12 @@ class SinglePlayerJob(models.Model):
 					)
 					add_car.save()
 				
-					flavor = "You managed to get yourself a %s. " % car.name
-					if add_car.hitpoints < car.hitpoints:
-						damage = 100-add_car.hp_percent
-						flavor += "However it took %s% damage." % damage
+					flavor = "You managed to get yourself a %s." % car.name
+					if add_car.hitpoints < car.max_hitpoints:
+						damage = 100 - add_car.hp_percent()
+						flavor += " However it took %s%% damage.<br>" % damage
+					else:
+						flavor += "<br>"
 					
 					flavor += "\n"
 					if 'succes' in results:
@@ -996,7 +960,7 @@ class SinglePlayerJob(models.Model):
 					)
 					add_gun.save()
 				
-					flavor = "You managed to get yourself a %s.\n" % gun.name
+					flavor = "You managed to get yourself a %s.<br>" % gun.name
 					
 					if 'succes' in results:
 						results['succes'] += flavor
@@ -1006,11 +970,9 @@ class SinglePlayerJob(models.Model):
 			else:
 				failed = random_object_by_model("failedsingleplayerjob", job=job)
 				temp = failed.failed_job(character)
-				results['failed'] = temp['failed']
-				print results		
+				results['failed'] = temp['failed']	
 				return results
 		
-		print results	
 		return results
 		
 		

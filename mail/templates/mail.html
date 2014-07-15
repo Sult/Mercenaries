@@ -23,8 +23,13 @@
 </div>
 
 <div>
-To: {{ mail.to }}<br>
-From: {{ mail.sender.name }}<br>
+To: {{ mail.to.name }}<br>
+From: 
+	{% if mail.sender == None %}
+		SYSTEM
+	{% else %}
+		{{ mail.sender }}
+	{% endif %}<br>
 {{ mail.view_sent_at }}<br>
 </div>
 

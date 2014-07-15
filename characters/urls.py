@@ -5,6 +5,8 @@ from characters import views
 urlpatterns = patterns('',
 	url(r'^$', views.index, name='index'),
 	url(r'^character/$', views.character, name='character'),
+	url(r'^garage/$', views.garage, name='garage'),
+	url(r'^gun_depot/$', views.gun_depot, name='gun depot'),
 	url(r'^contraband/$', views.contraband, name='contraband'),
 	
 	#jobs

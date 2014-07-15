@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block pagename %}{{ tag }}{% endblock %}
+
+{% block js %}<script type="text/javascript" src="{% static 'assets/js/sorttable.js' %}"></script>{% endblock %}
+
+{% block content %}
+<div>
+	<h2>Garage in {{ request.user.extenduser.current_character.region.name }}</h2>
+	
+	
+	
+	{% if items|length == 0 %}
+	<p style="font-size: 130%; text-align: center;">You have no cars in {{ region_name }}</p>
+	<p style="text-align: center;">{{ message }}</p>
+		
+	{% else %}
+	<p style="font-size: 130%; text-align: center;">Cars in {{ region_name }}</p>
+	<p style="text-align: center;">{{ message }}</p>
+	
+	
+	<form name="actionform" action="" method="post">{% csrf_token %}
+		{% for item in items %}
+			{% if forloop.first %}
+		<table>
+			<tr>			{# add sorting by clicking headers #}
+				<th>{% if request.GET.region %}
+					<a href="?region={{request.GET.region}}&order_by=name">Name</a></th>
+					{% else %}
+					<a href="?order_by=name">Name</a>
+					{% endif %}
+				</th>
+				
+					
+				<th>{% if request.GET.region %}
+					<a href="?region={{request.GET.region}}&order_by=category">Category</a></th>
+					{% else %}
+					<a href="?order_by=category">Category</a>
+					{% endif %}
+				</th>
+					
+				<th>{% if request.GET.region %}
+					<a href="?region={{request.GET.region}}&order_by=health">Health</a></th>
+					{% else %}
+					<a href="?order_by=health">Health</a>
+					{% endif %}
+				</th>
+					
+				
+				<th>{% if request.GET.region %}
+					<a href="?region={{request.GET.region}}&order_by=safe">Safe</a></th>
+					{% else %}
+					<a href="?order_by=safe">Safe</a>
+					{% endif %}
+				</th>
+					
+				
+				<th>{% if request.GET.region %}
+					<a href="?region={{request.GET.region}}&order_by=price">Price</a></th>
+					{% else %}
+					<a href="?order_by=price">Price</a>
+					{% endif %}
+				</th>
+					
+			</tr>
+			{% endif %}
+				
+			<tr>
+				<td><input type="checkbox" name="item" value="{{ item.id }}">{{ item.car.name }}</td>
+				<td>{{ item.car.category }}</td>
+				<td>{{ item.hp_percent }}%</td>
+				<td>
+					{% if item.safe == False%}
+					Unsafe
+					{% elif item.safe == None %}
+					Helicopter
+					{% else %}
+					Safehouse
+					{% endif %}
+				</td>
+				<td>{{ item.sell_price }}</td>
+			</tr>
+			
+			{% if forloop.last %}
+			
+			{# Paginator #}
+			<tr>
+				{% if items.paginator.num_pages != 1 %}
+				<td colspan="4" style="text-align: center;">
+					<span class="step-links">
+					{% if items.has_previous %}
+						<a href="?page={{ items.previous_page_number }}">previous</a>
+					{% endif %}
+						
+						<span class="current">
+							Page {{ items.number }} of {{ items.paginator.num_pages }}
+						</span>
+						
+					{% if items.has_next %}
+						<a href="?page={{ items.next_page_number }}">next</a>
+					{% endif %}
+					</span>
+				</td>
+				{% endif %}
+			</tr>
+		
+		</table>
+			{% endif %}
+		{% endfor %}
+		
+		{% if request.user.extenduser.current_character.region.name == region_name  %}
+		<select name="action" class="floatleft" onchange="actionform.submit();">
+			<option value="0" selected="selected">Actions:</option>
+			{% for value, name in actions %}
+			<option value="{{ value }}">{{ name }}</option>
+			{% endfor %}
+		</select>
+		{% endif %}
+		
+	</form>
+	{% endif %}
+	
+	<form name="region_action" action="" method="get">
+		<select name="region" class="floatright" onchange="region_action.submit();">
+			<option value="0" selected="selected">View Region:</option>
+			{% for value, name in region_actions %}
+			<option value="{{ value }}">{{ name }}</option>
+			{% endfor %}
+		</select>
+	</form>
+</div>
+{% endblock %}

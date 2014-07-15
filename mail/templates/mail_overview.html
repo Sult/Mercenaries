@@ -13,9 +13,9 @@
 	{% if mails|length > 0 %}
 		<table>
 			<tr>
-				<th colspan="2">Subject</th>
-				<th>From</th>
-				<th>Sent at</th>
+				<th colspan="2"><a href="?order_by=subject">Subject</a></th>
+				<th><a href="?order_by=sender">From</a></th>
+				<th><a href="?order_by=sent_at">Sent at</a></th>
 			</tr>
 		{% for mail in mails %}
 			<tr>
@@ -28,7 +28,13 @@
 						{% endif %}
 						</a>
 					</td>
-				<td>{{ mail.sender }}</td>
+				<td>
+					{% if mail.sender == None %}
+						SYSTEM
+					{% else %}
+						{{ mail.sender }}
+					{% endif %}
+				</td>
 				<td>{{ mail.sent_at|date:'H:i d-m-Y' }}</td>
 			</tr>
 		{% endfor %}

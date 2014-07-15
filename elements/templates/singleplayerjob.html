@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block pagename %}short job{% endblock %}
+{% block pagename %}{{ pagename }}{% endblock %}
 
 
 {% block content %}
@@ -41,10 +41,10 @@ After players Post data has been processed
 	
 	{% elif key == "succes"%}
 	<h3>Succes!</h3>
-	{{ value }}
+	{{ value|safe }}
 
 	{% else %}
-	<h3>Somthing wrong inform admin about wrong job result!</h3>
+	<h3>Somthing wrong. Inform admin about wrong job result!</h3>
 	{{ results }}
 	
 	{% endif %}

@@ -13,6 +13,11 @@ def get_actions(folder):
 	
 	if folder.name == "trash":
 		actions.append(["delete", "delete"])
+	
+	elif folder.name == "sent":
+		actions.append(["delete", "delete"])
+		return actions
+	
 	else:
 		actions.append(["read", "mark as read"])
 		actions.append(["unread", "mark as unread"])
@@ -70,10 +75,13 @@ def mail_options(postdata, mail):
 	
 	#make up mail to reply
 	if option == "reply":
-		to = mail.sender.name
-		subject = "Re: " + mail.subject
-		body = mail.reply_format()
-		return {"to": to, "subject": subject, "body": body}
+		if mail.sender != None:
+			to = mail.sender.name
+			subject = "Re: " + mail.subject
+			body = mail.reply_format()
+			return {"to": to, "subject": subject, "body": body}
+		else:
+			return False
 		
 	#make up template to forward	
 	elif option == "forward":
@@ -91,11 +99,6 @@ def mail_options(postdata, mail):
 
 
 
-class CreateFolderForm(forms.Form):
-	""" creates and validates new mail folders """
-
-	pass
-
 
 
 class MailForm(forms.Form):
@@ -110,8 +113,7 @@ class MailForm(forms.Form):
 		name = to.capitalize()
 
 		try:
-			recipient = Character.objects.get(name=name)
-			
+			recipient = Character.objects.get(name=name)		
 		except ObjectDoesNotExist:
 			raise forms.ValidationError("There is no player with that name.")
 	
@@ -119,7 +121,7 @@ class MailForm(forms.Form):
 	
 	
 #send mail
-def sent_mail(postdata, character):
+def send_mail(postdata, character):
 	name = postdata['to'].capitalize()
 	to = Character.objects.get(name=name)
 	
@@ -133,15 +135,16 @@ def sent_mail(postdata, character):
 	)
 	new_mail.save()
 	
-	sent_mail = Mail(
+	send_mail = Mail(
 		folder=MailFolder.objects.get(character=character, name="sent"),
 		category=Mail.PLAYER,
 		to=to,
+		read=True,
 		sender=character,
 		subject=postdata['subject'],
 		body=postdata['body'],
 	)
-	sent_mail.save()
+	send_mail.save()
 	
 
 
