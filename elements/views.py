@@ -91,8 +91,7 @@ def medium_job(request):
 		
 			# check if succeeds and give consequences
 			job = request.POST["job"]
-			#chance = session['medium_job_list'][job]
-			chance = 100
+			chance = session['medium_job_list'][job]
 			results = SinglePlayerJob.check_to_succeed(job, chance, character)
 		
 			#remove short_job_list and timer
