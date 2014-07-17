@@ -113,8 +113,8 @@ def add_base_values():
 		booze = 1800,
 		narcotics = 1800,
 		##solo actions
-		short_job = 10,					# 90 later
-		medium_job = 10,				# 300 later
+		short_job = 90,					# 90 later
+		medium_job = 300,				# 300 later
 		long_job = 10,					# 3600 later
 		##group actions
 		heist = 10800,
@@ -426,7 +426,7 @@ def add_single_player_jobs():
 		("Move furniture for a removal service.", the_type, True, 9, 50, 650, 20, 20, 95, 30),
 		("Steal lunchmoney from some school kids.", the_type, False, 10, 40, 650, 20, 25, 95, 15),
 		("Extort a local grocery store.", the_type, False, 8, 200, 1200, 10, 20, 92, 10),
-		("Blackmail the mahor with his affair", the_type, False, 5, 500, 4800, 30, 15, 79, 20),	
+		("Blackmail the major with his affair", the_type, False, 5, 500, 4800, 30, 15, 79, 20),	
 		("Pay an escort for oral sex.", the_type, False, 5, 55, 2000, 10, 20, 84, 25),
 	)
 	
@@ -506,7 +506,7 @@ def add_short_failures():
 		("Help the local police force maintain their guns.", "While reloading a gun you managed to shoot yourself in the leg, resulting in a TIMER checkup in hospital.", 3, True, 60, 200, 20, True), 
 		
 		("Clean the toilets in the barracks.", "Disgusted by the big piles of feces you refused the job.", 6, False, 0, 0, 0, True),
-		("Clean the toilets in the barracks.", "After puking for an hour, you deceided to call it a day and take your losses.", 4, False, 0, 0, 0, True),
+		("Clean the toilets in the barracks.", "After puking for an hour, you decided to call it a day and take your losses.", 4, False, 0, 0, 0, True),
 		("Clean the toilets in the barracks.", "You got a itching rash all over your body and had to go to hospital to get checked out. taking you a TIMER.", 2, True, 40, 210, 35, True),
 		
 		("Work as bouncer for a discotheek.", "Someone else took the job before you.", 6, False, 0, 0, 0, True),
@@ -532,8 +532,8 @@ def add_short_failures():
 		("Extort a local grocery store.", "The shop owner went to the police and you got caught adn now you need to spend TIMER in jail.", 2, True, 35, 190, 20, False),
 		("Extort a local grocery store.", "You didn't notice the cop in the store and you got busted immediately. You are now in jail for TIMER.", 2, True, 50, 210, 5, False), 
 		
-		("Blackmail the mahor with his affair", "Turned out his wife already knew and now you stand empty handed.", 6, False, 0, 0, 0, False),
-		("Blackmail the mahor with his affair", "The mahor turned to the cops and you got busted. You are now spending TIMER in jail.", 4, True, 50, 220, 15, False),
+		("Blackmail the major with his affair", "Turned out his wife already knew and now you stand empty handed.", 6, False, 0, 0, 0, False),
+		("Blackmail the major with his affair", "The mahor turned to the cops and you got busted. You are now spending TIMER in jail.", 4, True, 50, 220, 15, False),
 	)
 	
 	for failure in some_failures:
